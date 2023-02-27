@@ -76,6 +76,6 @@ export default {
 .content{
   position: relative;
   margin: 20px;
-  z-index: 200;
+  z-index: 20;
 }
 </style>
