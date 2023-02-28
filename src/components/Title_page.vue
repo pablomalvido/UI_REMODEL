@@ -29,7 +29,7 @@ export default {
   /* overflow-y: auto;
   background: var(--bg-color);
   padding: 6px 14px 0 14px; */
-  z-index: 199;
+  z-index: 1990;
 }
 
 .title_page h1{
