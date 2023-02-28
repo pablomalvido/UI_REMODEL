@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Home from '../views/Home.vue'
 import Sensors from '../views/Sensors.vue'
+import Launch from '../views/Launch.vue'
 
 const routes = [
   {
@@ -12,6 +13,11 @@ const routes = [
     path: '/sensors',
     name: 'sensors',
     component: Sensors
+  },
+  {
+    path: '/launch',
+    name: 'launch',
+    component: Launch
   },
 
   //redirect

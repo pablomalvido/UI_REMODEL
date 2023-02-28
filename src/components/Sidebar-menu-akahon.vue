@@ -221,6 +221,13 @@
           },
           {
             link: '#',
+            name: 'Launchers',
+            page: 'launch',
+            tooltip: 'Launchers',
+            icon: 'bx-rocket',
+          },
+          {
+            link: '#',
             name: 'Contact',
             page: 'home',
             tooltip: 'Contact',

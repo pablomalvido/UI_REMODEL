@@ -1,9 +1,11 @@
 <template>
+    <div class='page_bkg'>
     <div>
       <VueSidebarMenuAkahon page='Home' :rosCon="rosCon" :modeProp="modeProp"/>
     </div>
     <div>
       <router-view/>
+    </div>
     </div>
 </template>
 
@@ -93,5 +95,7 @@ export default {
 
 
 <style>
-
+  body {
+    background-color: #e2e1ec;
+  }
 </style>
