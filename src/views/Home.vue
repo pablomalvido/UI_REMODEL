@@ -11,6 +11,22 @@
     <p>Ad dolore dignissimos asperiores dicta facere optio quod commodi nam tempore recusandae. Rerum sed nulla eum vero expedita ex delectus voluptates rem at neque quos facere sequi unde optio aliquam!</p>
     <p>Tenetur quod quidem in voluptatem corporis dolorum dicta sit pariatur porro quaerat autem ipsam odit quam beatae tempora quibusdam illum! Modi velit odio nam nulla unde amet odit pariatur at!</p>
     <p>Consequatur rerum amet fuga expedita sunt et tempora saepe? Iusto nihil explicabo perferendis quos provident delectus ducimus necessitatibus reiciendis optio tempora unde earum doloremque commodi laudantium ad nulla vel odio?</p>
+    <div class="video_area">
+      <div class="tab-pane active" id="left_tab1">
+        <!-- <img id="left_stream1" class="video" style='height: 30%; width: 30%; object-fit: contain' src="../assets/img/placeholder.png"> -->
+        <img v-if="show_stream" id="left_stream1" class="video" style='height: 30%; width: 30%; object-fit: contain' :src=rviz_image>
+        <img v-else id="left_stream1" class="video" style='height: 30%; width: 30%; object-fit: contain' src="../assets/img/placeholder.png">
+      </div>
+      <!-- <input type="radio" v-model="camera_selected" value="/camera1/image/compressed">Front camera
+      <input type="radio" v-model="camera_selected" value="/camera2/image/compressed">Side camera -->
+      <div class="camera_selection">
+        <label for="cars">Camera view: </label>
+        <select v-model="camera_selected">
+          <option disabled value="">Please Select</option>
+          <option v-for="(topic, name) in camera_list" :key="name" :value="topic">{{name}}</option>
+        </select>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -29,10 +45,52 @@ export default {
       rosCon: false,
       modeProp: '',
       menuOpen: true,
+      rviz_image1_topic: null,
+      rviz_image2_topic: null,
+      rviz_image: "",
+      rviz_image2: "../assets/img/placeholder.png",
+      camera_list: {Front: "/camera1/image/compressed", Side: "/camera2/image/compressed"},
+      camera_selected: "/camera1/image/compressed",
+      show_stream: false,
+      last_time: 0,
     }
   },
 
   methods: {
+    init_subscribers(){
+      this.rviz_image1_topic = new ROSLIB.Topic({
+        ros : this.ros,
+        name : '/camera1/image/compressed',
+        messageType : 'sensor_msgs/CompressedImage'
+      });
+      
+      this.rviz_image1_topic.subscribe((message) => {
+        //console.log('RVIZ image 1 updated');
+        if (this.rviz_image1_topic.name == this.camera_selected){
+          this.last_time = Date.now();
+          this.rviz_image = "data:image/jpg;base64," + message.data;
+        }
+      });
+
+      this.rviz_image2_topic = new ROSLIB.Topic({
+        ros : this.ros,
+        name : '/camera2/image/compressed',
+        messageType : 'sensor_msgs/CompressedImage'
+      });
+      
+      this.rviz_image2_topic.subscribe((message) => {
+        //console.log('RVIZ image 2 updated');
+        if (this.rviz_image2_topic.name == this.camera_selected){
+          this.last_time = Date.now();
+          this.rviz_image = "data:image/jpg;base64," + message.data;
+        }
+      });
+    },
+
+    stop_subscribers(){
+      this.rviz_image1_topic.unsubscribe();
+    },
+
     publish_string(topic, message){
       var loadPublisher = new ROSLIB.Topic({
         ros : this.ros,
@@ -62,6 +120,18 @@ export default {
       loadPublisher.publish(loadTopic);
     },
 
+    checkStreamState(){
+      if ((Date.now()-this.last_time)<1000){
+        this.show_stream = true;
+      }
+      else{
+        this.show_stream = false;
+      }
+      setTimeout(() => { //Check periodically
+        this.checkStreamState() 
+      }, 1000)
+    },
+
     test_method(){
       console.log("Hello test")
     },
@@ -76,6 +146,7 @@ export default {
     this.ros.on('connection', () => {
       console.log('Connected to websocket server.');
       this.rosCon = true
+      this.init_subscribers()
     })
 
     this.ros.on('error', (error) => {
@@ -88,10 +159,11 @@ export default {
       console.log('Connection to websocket server closed.');
     })
 
-    this.modeProp = 'Running';
+    this.checkStreamState()
   },
 
   unmounted(){
+    this.stop_subscribers()
     this.ros.close()
   }
 }
@@ -104,5 +176,17 @@ export default {
   margin: 20px;
   z-index: 200;
 }
-
+.video_area{
+  margin: 40px 10% 20px 20px;
+  text-align: center;
+  align-items: center;
+  justify-content: center;
+}
+.video{
+  border: 2px solid #1d1b31;
+  margin: 10px;
+}
+.camera_selection{
+  margin: 10px;
+}
 </style>

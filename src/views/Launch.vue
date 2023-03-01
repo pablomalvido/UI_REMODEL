@@ -9,7 +9,7 @@
                 <li>
                     <p>{{launcher.name}}</p>
                     <button @click="launch_start(key)" :disabled="launcher.active!='gray' || global_launching">Launch</button>
-                    <button @click="launch_stop(key)" :disabled="launcher.active!='green' || global_launching">Stop</button>
+                    <button @click="launch_stop(key)" :disabled="(launcher.active!='green' && launcher.active!='red') || global_launching">Stop</button>
                     <span class="dot" :class = "launcher.active"></span>
                 </li>
             </ul>
@@ -32,14 +32,15 @@ export default {
       modeProp: '',
       menuOpen: true,
       launchers: {
-        1: {name: 'Robot demo', pkg: 'motoman/motoman_sda10f_moveit_config', file: 'demo_no_gripper', active: 'gray', nodes:['/joint_state_publisher','/move_group','/robot_state_publisher']}, 
+        1: {name: 'Robot demo', pkg: 'motoman/motoman_sda10f_moveit_config', file: 'demo_no_gripper_camera', active: 'gray', nodes:['/joint_state_publisher','/move_group','/robot_state_publisher']}, 
         2: {name: 'CAD Platform', pkg: 'elvez_pkg', file: 'launcher', active: 'gray', nodes:['/ATC_rf','/UC2_handler','/combs_rf','/platform_rf']},
-        3: {name: 'Test', pkg: 'test_pkg', file: 'print_loop', active: 'gray', nodes:['/print_loop_node']},
+        3: {name: 'Test', pkg: 'test_pkg', file: 'print_loop', active: 'gray', nodes:['/print_loop_node','/print_loop_node_infinite']},
       },
       global_launching: false,
       launch_service: null,
       stop_service: null,  
       active_nodes: [],
+      first_time: true,
     }
   },
 
@@ -151,13 +152,54 @@ export default {
                 console.log("Nodes started")
                 this.global_launching = false
             }
-            else {
-            console.log("Call function again")
-            setTimeout(() => {
-                this.check_started(launcher_id) 
-            }, 500)
-        };
+            else if(this.launchers[launcher_id].active != 'gray'){
+              console.log("Call function again")
+              setTimeout(() => {
+                  this.check_started(launcher_id) 
+              }, 500)
+            };
         });
+    },
+
+    getLaunchersState(){
+      this.ros.getNodes((nodes) => {
+          console.log(nodes)
+          for (const [key, value] of Object.entries(this.launchers)) {
+            if (value.active != 'orange'){
+              console.log(key)
+              console.log(value)
+              var active_num = 0;
+              for (let i = 0; i < value.nodes.length; i++) {
+                if (nodes.includes(value.nodes[i])){
+                    active_num += 1;
+                }
+              }
+              if (active_num == 0){
+                if (value.active == 'green' || value.active == 'red'){
+                  this.launchers[key].active = 'orange';
+                  this.global_launching = true
+                  this.launch_stop(key)
+                }
+                else{
+                  this.launchers[key].active = 'gray';
+                }
+              }
+              else if (active_num == value.nodes.length){
+                this.launchers[key].active = 'green';
+              }
+              else{
+                this.launchers[key].active = 'red';
+              }
+            }
+          }
+          if (this.first_time){
+            this.first_time = false
+            this.global_launching = false
+          }
+          setTimeout(() => { //Check periodically
+              this.getLaunchersState() 
+          }, 2000)
+      });
     },
   },
 
@@ -183,7 +225,8 @@ export default {
       console.log('Connection to websocket server closed.');
     })
 
-    this.modeProp = 'Running';
+    this.global_launching = true
+    this.getLaunchersState()
   },
 
   unmounted(){
@@ -262,5 +305,8 @@ button{
 }
 .dot.orange{
     background-color: orange;
+}
+.dot.red{
+    background-color: red;
 }
 </style>
