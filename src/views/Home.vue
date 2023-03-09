@@ -20,7 +20,7 @@
       <!-- <input type="radio" v-model="camera_selected" value="/camera1/image/compressed">Front camera
       <input type="radio" v-model="camera_selected" value="/camera2/image/compressed">Side camera -->
       <div class="camera_selection">
-        <label for="cars">Camera view: </label>
+        <label>Camera view: </label>
         <select v-model="camera_selected">
           <option disabled value="">Please Select</option>
           <option v-for="(topic, name) in camera_list" :key="name" :value="topic">{{name}}</option>
@@ -88,7 +88,9 @@ export default {
     },
 
     stop_subscribers(){
-      this.rviz_image1_topic.unsubscribe();
+      if (this.rviz_image1_topic){
+        this.rviz_image1_topic.unsubscribe();
+      }
     },
 
     publish_string(topic, message){
@@ -134,6 +136,9 @@ export default {
 
     test_method(){
       console.log("Hello test")
+      this.ros.getServices((services) => {
+        console.log(services);
+      });
     },
   },
 
@@ -160,6 +165,7 @@ export default {
     })
 
     this.checkStreamState()
+    this.test_method()
   },
 
   unmounted(){

@@ -1,9 +1,12 @@
 <template>
     <div class='page_bkg'>
     <div>
-      <VueSidebarMenuAkahon page='Home' :rosCon="rosCon" :modeProp="modeProp"/>
+      <VueSidebarMenuAkahon page='Home' :rosCon="rosCon" :modeProp="modeProp" :profileRole="role" :profileName="username" :isLoggedIn="login_bool" @button-exit-clicked="checkLogout"/>
     </div>
-    <div>
+    <div v-if=!login_bool>
+      <LoginMenu @login="checkLogin"/>
+    </div>
+    <div v-else>
       <router-view/>
     </div>
     </div>
@@ -12,11 +15,12 @@
 <script>
 import VueSidebarMenuAkahon from '@/components/Sidebar-menu-akahon.vue';
 import TitlePage from '@/components/Title_page.vue';
+import LoginMenu from './components/Login_menu.vue';
 
 export default {
   name: 'App',
 
-  components: {VueSidebarMenuAkahon},
+  components: {VueSidebarMenuAkahon, LoginMenu},
 
   data(){
     return{
@@ -25,6 +29,9 @@ export default {
       modeProp: 'Running',
       menuOpen: true,
       topic_mode: null,
+      login_bool: false,
+      role: 'not_login', //Requires an initial value (not empty)
+      username: ''
     }
   },
 
@@ -60,6 +67,23 @@ export default {
         console.log('Received message on ' + this.topic_mode.name + ': ' + message.data);
         this.modeProp = message.data;
       });
+    },
+
+    checkLogin(value){
+      console.log("LOGED IN")
+      //console.log(value)
+      this.login_bool=true
+      this.username=value[0]
+      this.role=value[1]
+      console.log(this.role)
+    },
+
+    checkLogout(){
+      console.log("LOGED OUT")
+      this.login_bool=false
+      this.role="Not_login"
+      this.username=''
+      console.log(this.login_bool)
     }
   },
 

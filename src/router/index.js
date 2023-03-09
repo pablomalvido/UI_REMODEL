@@ -2,28 +2,34 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Home from '../views/Home.vue'
 import Sensors from '../views/Sensors.vue'
 import Launch from '../views/Launch.vue'
+import Menu from '../views/Menu.vue'
 
 const routes = [
   {
-    path: '/home',
+    path: '/home/:role',
     name: 'home',
     component: Home
   },
   {
-    path: '/sensors',
+    path: '/sensors/:role',
     name: 'sensors',
     component: Sensors
   },
   {
-    path: '/launch',
+    path: '/launch/:role',
     name: 'launch',
     component: Launch
+  },
+  {
+    path: '/menu',
+    name: 'menu',
+    component: Menu
   },
 
   //redirect
   {
     path: '/',
-    redirect: '/home'
+    redirect: '/menu'
   }
 ]
 
