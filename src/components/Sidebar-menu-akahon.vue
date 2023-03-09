@@ -62,7 +62,8 @@
             :key="index"
           >
             <li>
-              <router-link :to="'/' + menuItem.page">
+              <!-- <router-link :to="'/' + menuItem.page"> -->
+              <router-link :to="{name: menuItem.page, params: {'role': profileRole}}">
               <a :href="menuItem.link">
                 <i
                   class="bx"
@@ -99,7 +100,7 @@
         <div class="profile-details">
           <img
             v-if="profileImg"
-            :src="profileImg"
+            :src="require('../assets/img/'+profileName+'.jpg')"
             alt="profileImg"
           >
           <i
@@ -115,12 +116,14 @@
             </div>
           </div>
         </div>
+        <!-- <router-link to="/menu"> -->
         <i
           v-if="isExitButton"
           class="bx bx-log-out"
           id="log_out"
           @click.stop="$emit('button-exit-clicked')"
         />
+        <!-- </router-link> -->
       </div>
     </div>
   </div>
@@ -253,11 +256,11 @@
       //! Profile detailes
       profileImg: {
         type: String,
-        default: require('../assets/img/photo.jpg'),
+        default: require('../assets/img/admin.jpg'),
       },
       profileName: {
         type: String,
-        default: ' Wael Mohammed',
+        default: '',
       },
       profileRole: {
         type: String,
