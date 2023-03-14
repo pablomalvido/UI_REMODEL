@@ -50,13 +50,13 @@
       <div class="predefined" v-if="manual_opt==0">
           <label>Group: </label>
           <select v-model="group_selected">
-            <!-- <option disabled value="">Please Select</option> -->
-            <option v-for="(group, index) in robot_groups" :key="index" :value="group">{{group}}</option>
+            <option disabled value="">Please Select</option>
+            <option v-for="(group, index) in robot_groups" :key="index" :value="index">{{index}}</option>
           </select>
           <label>Tool: </label>
           <select v-model="config_selected">
-            <!-- <option disabled value="">Please Select</option> -->
-            <option v-for="(config, index) in group_configs" :key="index" :value="config">{{config}}</option>
+            <option disabled value="">Please Select</option>
+            <option v-for="(config, index) in robot_groups[group_selected]" :key="index" :value="config">{{config}}</option>
           </select>
         <button class="medium_button" @click="publish_string('/topic_UI2',{msg})">Move</button>
       </div>
@@ -199,6 +199,9 @@ export default {
       rosCon: false,
       modeProp: '',
       menuOpen: true,
+      get_arms_pose_service: null,
+      get_moveit_groups_service: null,
+      move_group_service: null,
       rviz_image1_topic: null,
       rviz_image2_topic: null,
       rviz_image: "",
@@ -216,10 +219,10 @@ export default {
       arm_tools: {right: 'gripper_right', left: 'taping_gun'},
       arm_selected: 'left',
       tool_selected: 'gripper',
-      robot_groups: ['torso', 'right_arm', 'left_arm', 'arms'], //Get with a service
-      group_selected: 'right_arm',
-      group_configs: ['pose1', 'pose2'], //Get with a service
-      config_selected: 'pose1',
+      robot_groups: {}, /*{arm_right:['pose1', 'pose2'], arm_left:['poseX','poseY']},*/ //Get with a service
+      group_selected: '',
+      //group_configs: [], //Get with a service
+      config_selected: '',
       control_opt: 1,
       manual_opt: 0,
       cartesian_position_rel_right: {'X': 0, 'Y': 0, 'Z': 0, 'Rx': 0, 'Ry': 0, 'Rz': 0},
@@ -264,6 +267,39 @@ export default {
       if (this.rviz_image1_topic){
         this.rviz_image1_topic.unsubscribe();
       }
+    },
+
+    init_services(){
+        this.get_arms_pose_service = new ROSLIB.Service({
+            ros : this.ros,
+            name : '/UI/get_arms_pose',
+            serviceType : 'test_pkg/ArmsPose'
+        });
+        this.get_moveit_groups_service = new ROSLIB.Service({
+            ros : this.ros,
+            name : '/UI/get_moveit_groups',
+            serviceType : 'test_pkg/MoveitGroups'
+        });
+        this.move_group_service = new ROSLIB.Service({
+            ros : this.ros,
+            name : '/UI/move_group',
+            serviceType : 'test_pkg/MoveGroupSrv'
+        });
+    },
+
+    update_variables(){
+      this.robot_groups={}
+      var request = new ROSLIB.ServiceRequest({});
+  
+      this.get_moveit_groups_service.callService(request, (result) => {
+        for (const [key, value] of Object.entries(result.groups)) {
+          //groups_temp = {}
+          this.robot_groups[value.group] =  []
+          for (let i = 0; i < value.targets.length; i++) {
+            this.robot_groups[value.group].push(value.targets[i])
+          }
+        }
+      });
     },
 
     publish_string(topic, message){
@@ -325,6 +361,8 @@ export default {
       console.log('Connected to websocket server.');
       this.rosCon = true
       this.init_subscribers()
+      this.init_services()
+      this.update_variables()
     })
 
     this.ros.on('error', (error) => {
@@ -580,5 +618,8 @@ input{
   padding: 5px;
   display:flex; 
   flex-direction:column-reverse;
+}
+option{
+  padding-right: 2px;
 }
 </style>

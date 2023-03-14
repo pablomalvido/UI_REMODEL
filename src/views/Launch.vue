@@ -32,15 +32,19 @@ export default {
       modeProp: '',
       menuOpen: true,
       launchers: {
-        1: {name: 'Robot demo', pkg: 'motoman/motoman_sda10f_moveit_config', file: 'demo_no_gripper_camera', active: 'gray', nodes:['/joint_state_publisher','/move_group','/robot_state_publisher']}, 
-        2: {name: 'CAD Platform', pkg: 'elvez_pkg', file: 'launcher', active: 'gray', nodes:['/ATC_rf','/UC2_handler','/combs_rf','/platform_rf']},
-        3: {name: 'Test', pkg: 'test_pkg', file: 'print_loop', active: 'gray', nodes:['/print_loop_node','/print_loop_node_infinite']},
+        1: {name: 'Robot demo', launch_files:[{pkg: 'motoman/motoman_sda10f_moveit_config', file: 'demo_no_gripper_camera'}], active: 'gray', nodes:['/joint_state_publisher','/move_group','/robot_state_publisher']}, 
+        2: {name: 'CAD Platform', launch_files:[{pkg: 'elvez_pkg', file: 'launcher'}], active: 'gray', nodes:['/ATC_rf','/UC2_handler','/combs_rf','/platform_rf']},
+        3: {name: 'Test', launch_files:[{pkg: 'test_pkg', file: 'print_loop'}], active: 'gray', nodes:['/print_loop_node','/print_loop_node_infinite']},
+        99: {name: 'All', launch_files:[], active: 'gray', nodes:['']},
       },
       global_launching: false,
       launch_service: null,
       stop_service: null,  
       active_nodes: [],
       first_time: true,
+      launch_files_temp: [],
+      nodes_temp: [],
+      service_data: [],
     }
   },
 
@@ -77,62 +81,90 @@ export default {
     init_services(){
         this.launch_service = new ROSLIB.Service({
             ros : this.ros,
-            name : '/UI_launcher/launch',
-            serviceType : 'test_pkg/launch'
+            name : '/UI_launcher/launch_multiple',
+            serviceType : 'test_pkg/launch_multiple'
         });
         this.stop_service = new ROSLIB.Service({
             ros : this.ros,
-            name : '/UI_launcher/stop',
-            serviceType : 'test_pkg/launch'
+            name : '/UI_launcher/stop_multiple',
+            serviceType : 'test_pkg/launch_multiple'
         });
+    },
+
+    create_all_launcher(){
+      this.launch_files_temp = []
+      this.nodes_temp = []
+      for (const [key, value] of Object.entries(this.launchers)) {
+        if (key!=99){
+          for (let i = 0; i < value.launch_files.length; i++) {
+            this.launch_files_temp.push({pkg: value.launch_files[i].pkg, file:value.launch_files[i].file})
+          }
+          this.nodes_temp = this.nodes_temp.concat(value.nodes)
+        }
+      }
+      this.launchers[99].launch_files = this.launch_files_temp
+      this.launchers[99].nodes = this.nodes_temp
     },
 
     launch_start(launcher_id){
       this.global_launching = true
-      console.log(this.launchers[launcher_id].name)
-        var request = new ROSLIB.ServiceRequest({
-            pkg : this.launchers[launcher_id].pkg,
-            file : this.launchers[launcher_id].file
-        });
-    
-        this.launch_service.callService(request, (result) => {
-            console.log('Result for service call on ' + this.launch_service.name + ': ' + result.success);
-            this.launchers[launcher_id].active = 'orange'
-        });
-        
-        this.check_started(launcher_id)
+      console.log(this.launchers[launcher_id])
+      this.service_data = []
+      for (let i = 0; i < this.launchers[launcher_id].launch_files.length; i++) {
+        var launch_file_i = new ROSLIB.Message({
+          pkg: this.launchers[launcher_id].launch_files[i].pkg,
+          file: this.launchers[launcher_id].launch_files[i].file
+        })
+        this.service_data.push(launch_file_i)
+      }
+      var request = new ROSLIB.ServiceRequest({
+          data : this.service_data
+      });
+  
+      this.launch_service.callService(request, (result) => {
+          console.log('Result for service call on ' + this.launch_service.name + ': ' + result.success);
+          this.launchers[launcher_id].active = 'orange'
+      });
+      
+      this.check_started(launcher_id)
     },
 
     launch_stop(launcher_id){
       this.global_launching = true
-      console.log(this.launchers[launcher_id].name)
-        var request = new ROSLIB.ServiceRequest({
-            pkg : this.launchers[launcher_id].pkg,
-            file : this.launchers[launcher_id].file
-        });
+      this.service_data = []
+      for (let i = 0; i < this.launchers[launcher_id].launch_files.length; i++) {
+        var launch_file_i = new ROSLIB.Message({
+          pkg: this.launchers[launcher_id].launch_files[i].pkg,
+          file: this.launchers[launcher_id].launch_files[i].file
+        })
+        this.service_data.push(launch_file_i)
+      }
+      var request = new ROSLIB.ServiceRequest({
+          data : this.service_data
+      });
     
-        this.stop_service.callService(request, (result) => {
-            console.log('Result for service call on ' + this.launch_service.name + ': ' + result.success);
-            this.launchers[launcher_id].active = 'orange';
-        });
+      this.stop_service.callService(request, (result) => {
+          console.log('Result for service call on ' + this.launch_service.name + ': ' + result.success);
+          this.launchers[launcher_id].active = 'orange';
+      });
 
-        setTimeout(() => {
-            this.ros.getNodes((nodes) => {
-                var killed = true;
-                for (let i = 0; i < this.launchers[launcher_id].nodes.length; i++) {
-                    console.log(this.launchers[launcher_id].nodes[i])
-                    console.log(nodes)
-                    if (nodes.includes(this.launchers[launcher_id].nodes[i])){
-                        killed = false;
-                        break; 
-                    }
-                }
-                if (killed){
-                    this.launchers[launcher_id].active = 'gray';
-                    this.global_launching = false
-                }
-            });
-        }, 2500)
+      setTimeout(() => {
+          this.ros.getNodes((nodes) => {
+              var killed = true;
+              for (let i = 0; i < this.launchers[launcher_id].nodes.length; i++) {
+                  console.log(this.launchers[launcher_id].nodes[i])
+                  console.log(nodes)
+                  if (nodes.includes(this.launchers[launcher_id].nodes[i])){
+                      killed = false;
+                      break; 
+                  }
+              }
+              if (killed){
+                  this.launchers[launcher_id].active = 'gray';
+                  this.global_launching = false
+              }
+          });
+      }, 2500)
     },
 
     check_started(launcher_id){
@@ -162,8 +194,10 @@ export default {
     },
 
     getLaunchersState(){
+      console.log("AAA")
       this.ros.getNodes((nodes) => {
           console.log(nodes)
+          console.log("BBB")
           for (const [key, value] of Object.entries(this.launchers)) {
             if (value.active != 'orange'){
               console.log(key)
@@ -204,6 +238,9 @@ export default {
   },
 
   mounted(){
+    this.global_launching = true
+    this.first_time = true
+
     this.ros = new ROSLIB.Ros({
       url : 'ws://192.168.43.168:9090' //Port = 9090
     });
@@ -213,6 +250,7 @@ export default {
       console.log('Connected to websocket server.');
       this.rosCon = true
       this.init_services()
+      this.getLaunchersState()
     })
 
     this.ros.on('error', (error) => {
@@ -225,8 +263,7 @@ export default {
       console.log('Connection to websocket server closed.');
     })
 
-    this.global_launching = true
-    this.getLaunchersState()
+    this.create_all_launcher()
   },
 
   unmounted(){
