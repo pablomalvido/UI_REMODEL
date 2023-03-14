@@ -231,8 +231,8 @@
           },
           {
             link: '#',
-            name: 'Contact',
-            page: 'home',
+            name: 'Contact-REMODEL',
+            page: 'contact',
             tooltip: 'Contact',
             icon: 'bxs-contact',
           },
