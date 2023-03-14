@@ -3,6 +3,7 @@ import Home from '../views/Home.vue'
 import Sensors from '../views/Sensors.vue'
 import Launch from '../views/Launch.vue'
 import Menu from '../views/Menu.vue'
+import Contact from '../views/Contact.vue'
 
 const routes = [
   {
@@ -19,6 +20,11 @@ const routes = [
     path: '/launch/:role',
     name: 'launch',
     component: Launch
+  },
+  {
+    path: '/contact',
+    name: 'contact',
+    component: Contact
   },
   {
     path: '/menu',
