@@ -29,6 +29,8 @@ export default {
       modeProp: 'Running',
       menuOpen: true,
       topic_mode: null,
+      topic_logs: null,
+      logs: [],
       login_bool: false,
       role: 'not_login', //Requires an initial value (not empty)
       username: ''
@@ -62,10 +64,19 @@ export default {
         name : '/UI/mode',
         messageType : 'std_msgs/String'
       });
-      
       this.topic_mode.subscribe((message) => {
         console.log('Received message on ' + this.topic_mode.name + ': ' + message.data);
         this.modeProp = message.data;
+      });
+
+      this.topic_logs = new ROSLIB.Topic({
+        ros : this.ros,
+        name : '/UI/logs',
+        messageType : 'std_msgs/String'
+      });
+      this.topic_logs.subscribe((message) => {
+        console.log('Received message on ' + this.topic_mode.name + ': ' + message.data);
+        // this.logs.unshift(message)
       });
     },
 

@@ -44,12 +44,12 @@
       <div class="radiobuttons">
         <input type="radio" v-model="manual_opt" value="0">Predefined config
         <input type="radio" v-model="manual_opt" value="1">Cartesian relative
-        <input type="radio" v-model="manual_opt" value="2">Cartesian absolute
+        <input type="radio" @click="reset_cartesian('both', 2)" v-model="manual_opt" value="2">Cartesian absolute
       </div>
 
       <div class="predefined" v-if="manual_opt==0">
           <label>Group: </label>
-          <select v-model="group_selected">
+          <select v-model="group_selected" :onchange="update_select_group()">
             <option disabled value="">Please Select</option>
             <option v-for="(group, index) in robot_groups" :key="index" :value="index">{{index}}</option>
           </select>
@@ -58,7 +58,7 @@
             <option disabled value="">Please Select</option>
             <option v-for="(config, index) in robot_groups[group_selected]" :key="index" :value="config">{{config}}</option>
           </select>
-        <button class="medium_button" @click="publish_string('/topic_UI2',{msg})">Move</button>
+        <button class="medium_button" :disabled="robot_moving" @click="move_group_manual()">Move</button>
       </div>
 
       <div class="cartesian relative" v-if="manual_opt==1">
@@ -68,7 +68,7 @@
             <label> {{axis}}: </label>
             <input type="text" v-model="cartesian_position_rel_right[axis]">
           </div>
-          <button class="small_button" @click="publish_string('/topic_UI2',{msg})">Reset</button>
+          <button class="small_button" @click="reset_cartesian('right', 1)">Reset</button>
         </div>
         <div class="inline_items">
           <label class="arm_side"><b>Left</b></label>
@@ -76,9 +76,13 @@
             <label> {{axis}}: </label>
             <input type="text" v-model="cartesian_position_rel_left[axis]">
           </div>
-          <button class="small_button" @click="publish_string('/topic_UI2',{msg})">Reset</button>
+          <button class="small_button" @click="reset_cartesian('left', 1)">Reset</button>
         </div>
-        <button class="medium_button" @click="publish_string('/topic_UI2',{msg})">Move</button>
+        <button class="medium_button" :disabled="robot_moving" @click="move_group_manual()">Move</button>
+        <div class="small_letter">
+          <label><b>(Note 1:</b> Units in mm and degrees.</label>
+          <label><b>Note 2:</b> ZYX Euler angles.)</label>
+        </div>
       </div>
 
       <div class="cartesian absolute" v-if="manual_opt==2">
@@ -88,7 +92,7 @@
             <label> {{axis}}: </label>
             <input type="text" v-model="cartesian_position_abs_right[axis]">
           </div>
-          <button class="small_button" @click="publish_string('/topic_UI2',{msg})">Current</button>
+          <button class="small_button" @click="reset_cartesian('right', 2)">Current</button>
         </div>
         <div class="inline_items">
           <label class="arm_side"><b>Left</b></label>
@@ -96,9 +100,13 @@
             <label> {{axis}}: </label>
             <input type="text" v-model="cartesian_position_abs_left[axis]">
           </div>
-          <button class="small_button" @click="publish_string('/topic_UI2',{msg})">Current</button>
+          <button class="small_button" @click="reset_cartesian('left', 2)">Current</button>
         </div>
-        <button class="medium_button" @click="publish_string('/topic_UI2',{msg})">Move</button>
+        <button class="medium_button" :disabled="robot_moving" @click="move_group_manual()">Move</button>
+        <div class="small_letter">
+          <label><b>(Note 1:</b> Units in mm and degrees.</label>
+          <label><b>Note 2:</b> ZYX Euler angles.)</label>
+        </div>
       </div>
 
       <div class="EEF_bkg">
@@ -173,9 +181,8 @@
       <div class="logs">
         <h3>Logs</h3>
       <div class="messages">
-      <ul>
-        <il>Lorem ipsum, dolor sit amet consectetur adipisicing elit. Ea tempore iusto autem nam ab ullam ratione, cupiditate sint fuga enim quas! Repellat, fugiat perspiciatis! Ut nostrum iste distinctio quo eius!</il>
-        <il>Harum odio debitis sit minus temporibus beatae, velit quo reiciendis quas ad corrupti amet earum distinctio hic natus, ratione est, placeat aspernatur qui? Possimus ratione soluta eum suscipit distinctio expedita?</il>
+      <ul v-for="(message_log, key) in logs" :key="key">
+        <il>{{message_log}}</il>
       </ul>
       </div>
       </div>
@@ -225,10 +232,12 @@ export default {
       config_selected: '',
       control_opt: 1,
       manual_opt: 0,
+      robot_moving: false,
       cartesian_position_rel_right: {'X': 0, 'Y': 0, 'Z': 0, 'Rx': 0, 'Ry': 0, 'Rz': 0},
       cartesian_position_rel_left: {'X': 0, 'Y': 0, 'Z': 0, 'Rx': 0, 'Ry': 0, 'Rz': 0},
       cartesian_position_abs_right: {'X': 0, 'Y': 0, 'Z': 0, 'Rx': 0, 'Ry': 0, 'Rz': 0},
       cartesian_position_abs_left: {'X': 0, 'Y': 0, 'Z': 0, 'Rx': 0, 'Ry': 0, 'Rz': 0},
+      logs: [], //['Logs console...'],
     }
   },
 
@@ -343,6 +352,132 @@ export default {
       }, 1000)
     },
 
+    update_select_group(){
+      if (this.group_selected){
+        if(!(this.robot_groups[this.group_selected].includes(this.config_selected))){
+          this.config_selected = this.robot_groups[this.group_selected][0]
+        }
+      }
+    },
+
+    move_group_manual(){
+      //Predefined pose
+      if(parseInt(this.manual_opt)==0){
+        var request = new ROSLIB.ServiceRequest({
+            group: this.group_selected,
+            type: parseInt(this.manual_opt),
+            target_named: this.config_selected,
+        });
+      }
+      //Relative cartesian
+      else if (parseInt(this.manual_opt)==1 || parseInt(this.manual_opt)==2){
+        let target_pose_left = null
+        let target_pose_right = null
+        if (parseInt(this.manual_opt)==1){
+          target_pose_left = new ROSLIB.Message({
+            x: parseFloat(this.cartesian_position_rel_left['X']),
+            y: parseFloat(this.cartesian_position_rel_left['Y']),
+            z: parseFloat(this.cartesian_position_rel_left['Z']),
+            rx: parseFloat(this.cartesian_position_rel_left['Rx']),
+            ry: parseFloat(this.cartesian_position_rel_left['Ry']),
+            rz: parseFloat(this.cartesian_position_rel_left['Rz']),
+          })
+          target_pose_right = new ROSLIB.Message({
+            x: parseFloat(this.cartesian_position_rel_right['X']),
+            y: parseFloat(this.cartesian_position_rel_right['Y']),
+            z: parseFloat(this.cartesian_position_rel_right['Z']),
+            rx: parseFloat(this.cartesian_position_rel_right['Rx']),
+            ry: parseFloat(this.cartesian_position_rel_right['Ry']),
+            rz: parseFloat(this.cartesian_position_rel_right['Rz']),
+          })
+        }
+        else{
+          target_pose_left = new ROSLIB.Message({
+            x: parseFloat(this.cartesian_position_abs_left['X']),
+            y: parseFloat(this.cartesian_position_abs_left['Y']),
+            z: parseFloat(this.cartesian_position_abs_left['Z']),
+            rx: parseFloat(this.cartesian_position_abs_left['Rx']),
+            ry: parseFloat(this.cartesian_position_abs_left['Ry']),
+            rz: parseFloat(this.cartesian_position_abs_left['Rz']),
+          })
+          target_pose_right = new ROSLIB.Message({
+            x: parseFloat(this.cartesian_position_abs_right['X']),
+            y: parseFloat(this.cartesian_position_abs_right['Y']),
+            z: parseFloat(this.cartesian_position_abs_right['Z']),
+            rx: parseFloat(this.cartesian_position_abs_right['Rx']),
+            ry: parseFloat(this.cartesian_position_abs_right['Ry']),
+            rz: parseFloat(this.cartesian_position_abs_right['Rz']),
+          })
+        }
+        const target_pose_msg = new ROSLIB.Message({
+          left: target_pose_left,
+          right: target_pose_right,
+        })
+        console.log(target_pose_msg)
+        var request = new ROSLIB.ServiceRequest({
+            group: 'arms',
+            type: parseInt(this.manual_opt),
+            target_pose: target_pose_msg,
+        });
+        console.log(request)
+      }
+  
+      console.log("Robot moving...")
+      this.add_logs("Moving " + request.group.toString() + "...")
+      this.robot_moving = true
+      this.move_group_service.callService(request, (result) => {
+        console.log(result.success)
+        if (result.success){
+          this.add_logs("Successful motion.")
+        }else{
+          this.add_logs("Motion failure.")
+        }
+        this.robot_moving = false
+      });
+    },
+
+    reset_cartesian(arm_side, motion_type){
+      //Relative
+      if (parseInt(motion_type)==1){
+        if (arm_side == "left"){
+          this.cartesian_position_rel_left = {X:0, Y:0, Z:0, Rx:0, Ry:0, Rz:0}
+        } else if (arm_side == "right"){
+          this.cartesian_position_rel_right = {X:0, Y:0, Z:0, Rx:0, Ry:0, Rz:0}
+        }
+      }
+      //Absolute
+      else if(parseInt(motion_type)==2){
+        var request = new ROSLIB.ServiceRequest({});
+        this.get_arms_pose_service.callService(request, (result) => {
+          console.log(result.success)
+          if (result.success){
+            if (arm_side == "left" || arm_side == "both"){
+              this.cartesian_position_abs_left.X = ((result.left.x)*1000).toFixed(1)
+              this.cartesian_position_abs_left.Y = ((result.left.y)*1000).toFixed(1)
+              this.cartesian_position_abs_left.Z = ((result.left.z)*1000).toFixed(1)
+              this.cartesian_position_abs_left.Rx = (result.left.rx*(180/Math.PI)).toFixed(2)
+              this.cartesian_position_abs_left.Ry = (result.left.ry*(180/Math.PI)).toFixed(2)
+              this.cartesian_position_abs_left.Rz = (result.left.rz*(180/Math.PI)).toFixed(2)
+            } 
+            if (arm_side == "right" || arm_side == "both"){
+              this.cartesian_position_abs_right.X = ((result.right.x)*1000).toFixed(1)
+              this.cartesian_position_abs_right.Y = ((result.right.y)*1000).toFixed(1)
+              this.cartesian_position_abs_right.Z = ((result.right.z)*1000).toFixed(1)
+              this.cartesian_position_abs_right.Rx = (result.right.rx*(180/Math.PI)).toFixed(2)
+              this.cartesian_position_abs_right.Ry = (result.right.ry*(180/Math.PI)).toFixed(2)
+              this.cartesian_position_abs_right.Rz = (result.right.rz*(180/Math.PI)).toFixed(2)
+            }
+          }
+        });
+      }
+    },
+
+    add_logs(msg){
+      var time_now= new Date().toLocaleTimeString();
+      time_now=time_now.slice(0,-3);
+      this.logs.unshift(time_now + ": " + msg);
+    },
+
     test_method(){
       console.log("Hello test")
       this.ros.getServices((services) => {
@@ -363,6 +498,7 @@ export default {
       this.init_subscribers()
       this.init_services()
       this.update_variables()
+      this.reset_cartesian('both', 2)
     })
 
     this.ros.on('error', (error) => {
@@ -507,6 +643,14 @@ button{
 .inline_items *{
   display: inline-block;
 }
+.block_items *{
+  margin: auto;
+  display: block;
+}
+.block_items{
+  background: red;
+  margin: auto;
+}
 
 .cartesian .inline_items *{
   justify-content: right;
@@ -533,9 +677,10 @@ button{
   margin-right: 10px;
 }
 .cartesian input{
-  width: 40px;
+  width: 45px;
   margin-left: 4px;
   margin-right: 6px;
+  font-size: 12px;
 }
 .small_button{
   padding: 1px 3px 1px 3px;
@@ -617,9 +762,21 @@ input{
   border-radius: 5px;
   padding: 5px;
   display:flex; 
+  text-align: left;
   flex-direction:column-reverse;
+}
+.logs .messages *{
+  padding: 4px;
 }
 option{
   padding-right: 2px;
+}
+.small_letter{
+  font-size: 10px;
+}
+.small_letter *{
+  font-size: 11px;
+  margin-left: 2px;
+  margin-right: 2px;
 }
 </style>

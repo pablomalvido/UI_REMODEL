@@ -32,9 +32,10 @@ export default {
       modeProp: '',
       menuOpen: true,
       launchers: {
-        1: {name: 'Robot demo', launch_files:[{pkg: 'motoman/motoman_sda10f_moveit_config', file: 'demo_no_gripper_camera'}], active: 'gray', nodes:['/joint_state_publisher','/move_group','/robot_state_publisher']}, 
-        2: {name: 'CAD Platform', launch_files:[{pkg: 'elvez_pkg', file: 'launcher'}], active: 'gray', nodes:['/ATC_rf','/UC2_handler','/combs_rf','/platform_rf']},
-        3: {name: 'Test', launch_files:[{pkg: 'test_pkg', file: 'print_loop'}], active: 'gray', nodes:['/print_loop_node','/print_loop_node_infinite']},
+        1: {name: 'Robot demo', launch_files:[{pkg: 'motoman/motoman_sda10f_moveit_config', file: 'demo_no_gripper_camera'}], active: 'gray', nodes:['/joint_state_publisher','/move_group','/robot_state_publisher']},
+        2: {name: 'CAD Platform', launch_files:[{pkg: 'elvez_pkg', file: 'launcher'}], active: 'gray', nodes:['/ATC_rf','/UC2_handler','/combs_rf','/platform_rf']}, 
+        3: {name: 'Manual control', launch_files:[{pkg: 'test_pkg', file: 'moveit_manual'}], active: 'gray', nodes:['/moveit_manual']},
+        4: {name: 'Test', launch_files:[{pkg: 'test_pkg', file: 'print_loop'}], active: 'gray', nodes:['/print_loop_node','/print_loop_node_infinite']},
         99: {name: 'All', launch_files:[], active: 'gray', nodes:['']},
       },
       global_launching: false,
