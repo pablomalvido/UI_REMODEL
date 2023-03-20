@@ -21,7 +21,7 @@ export default {
     data(){
         return{
             rosCon: false,
-            listener_reset = null
+            listener_reset = null,
             alarm_title: "ALARMS",
             active_alarms: [],
             inactive_alarms: [],
@@ -65,7 +65,7 @@ export default {
     //       this.rviz_image = "data:image/jpg;base64," + message.data;
     //     }
     //   });
-    },
+    // },
 
         // if(rosCon == false){
         //         ros = new ROSLIB.Ros({
