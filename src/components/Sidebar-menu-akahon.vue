@@ -196,7 +196,7 @@
           },
           {
             link: '#',
-            page: 'home',
+            page: 'alarms',
             name: 'Alarms',
             tooltip: 'Alarms',
             icon: 'bx-error',

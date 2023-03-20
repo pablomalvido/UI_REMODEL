@@ -4,6 +4,7 @@ import Sensors from '../views/Sensors.vue'
 import Launch from '../views/Launch.vue'
 import Menu from '../views/Menu.vue'
 import Contact from '../views/Contact.vue'
+import Alarms from '../views/Alarms.vue' 
 
 const routes = [
   {
@@ -15,6 +16,11 @@ const routes = [
     path: '/sensors/:role',
     name: 'sensors',
     component: Sensors
+  },
+  {
+    path: '/alarms/:role',
+    name: 'alarms',
+    component: Alarms
   },
   {
     path: '/launch/:role',
