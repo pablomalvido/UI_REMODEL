@@ -26,7 +26,7 @@ export default {
     return{
       msg: 'Hellooo',
       rosCon: false,
-      modeProp: 'Running',
+      modeProp: 'Idle',
       menuOpen: true,
       topic_mode: null,
       topic_logs: null,

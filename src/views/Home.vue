@@ -24,10 +24,11 @@
       <h3>Process control</h3>
 
       <div class="controls">
-        <button @click="publish_string('/topic_UI2',{msg})">Run</button>
-        <button @click="publish_string_constant('/UI/mode','Idle')">Stop</button>
-        <button @click="publish_string_constant('/UI/mode','Running')">{{pause_resume}}</button>
-        <button @click="publish_string('/topic_UI2',{msg})">Run step</button>
+        <button :disabled="modeProp=='Running'" @click="publish_bool('/UI/start',true); paused_bool=false;">Start</button>
+        <button :disabled="modeProp=='Idle' && !paused_bool" @click="publish_bool('/UI/stop',true); paused_bool=false;">Stop</button>
+        <button :disabled="modeProp=='Running'" v-if="paused_bool" @click="publish_bool('/UI/resume',true); paused_bool=false;">Resume</button>
+        <button :disabled="modeProp=='Idle'" v-else @click="publish_bool('/UI/pause',true); paused_bool=true;">Pause</button>
+        <button :disabled="modeProp=='Running'" @click="publish_int('/UI/step',op_selected); paused_bool=false;">Run step</button>
       </div>
 
       <div class="operations">
@@ -155,9 +156,9 @@
 
     <div class="video_area">
       <div class="tab-pane active" id="left_tab1">
-        <!-- <img id="left_stream1" class="video" style='height: 30%; width: 30%; object-fit: contain' src="../assets/img/placeholder.png"> -->
-        <img v-if="show_stream" id="left_stream1" class="video" style='height: 240px; width: 425px; object-fit: contain' :src=rviz_image>
-        <img v-else id="left_stream1" class="video" style='height: 240px; width: 425px; object-fit: contain' src="../assets/img/placeholder.png">
+        <!-- <img id="left_stream1" class="video" style='height: 30% 240; width: 30% 425; object-fit: contain' src="../assets/img/placeholder.png"> -->
+        <img v-if="show_stream" id="left_stream1" class="video" style='height: 319px; width: 425px; object-fit: contain' :src=rviz_image>
+        <img v-else id="left_stream1" class="video" style='height: 319px; width: 425px; object-fit: contain' src="../assets/img/placeholder.png">
       </div>
       <!-- <input type="radio" v-model="camera_selected" value="/camera1/image/compressed">Front camera
       <input type="radio" v-model="camera_selected" value="/camera2/image/compressed">Side camera -->
@@ -173,9 +174,11 @@
     <div class="right_content">
       <div class="feedback">
         <h3>Feedback</h3>
-      <ul>
-        <il>Lorem ipsum, dolor sit amet consectetur adipisicing elit. Ea tempore iusto autem nam ab ullam ratione, cupiditate sint fuga enim quas! Repellat, fugiat perspiciatis! Ut nostrum iste distinctio quo eius!</il>
-        <il>Mollitia, ea deleniti? Pariatur tempora maxime voluptatibus corrupti reiciendis temporibus quas illum nostrum doloribus, veritatis excepturi obcaecati quasi omnis deleniti fugiat, labore repudiandae sit velit molestias harum ut unde ex.</il>
+      <ul class="block_items" v-for="(value, key) in feedback_msgs" :key="key">
+        <il>
+          <label class="feedback_name inline_items_feedback">{{value.name}}: </label>
+          <label class="feedback_value inline_items_feedback">{{value.val}}</label>
+        </il>
       </ul>
       </div>
       <div class="logs">
@@ -204,21 +207,27 @@ export default {
     return{
       msg: 'Hellooo',
       rosCon: false,
-      modeProp: '',
+      modeProp: 'Idle',
       menuOpen: true,
       get_arms_pose_service: null,
       get_moveit_groups_service: null,
       move_group_service: null,
+      get_all_operations_service: null,
+      get_mode_service: null,
+      index_topic: null,
+      topic_mode: null,
+      topic_logs: null,
       rviz_image1_topic: null,
       rviz_image2_topic: null,
+      rviz_image3_topic: null,
       rviz_image: "",
       rviz_image2: "../assets/img/placeholder.png",
-      camera_list: {RVIZ_Front: "/camera1/image/compressed", RVIZ_Side: "/camera2/image/compressed"},
+      camera_list: {RVIZ_Front: "/camera1/image/compressed", RVIZ_Side: "/camera2/image/compressed", RVIZ_guides: "/camera3/image/compressed"},
       camera_selected: "/camera1/image/compressed",
       show_stream: false,
       last_time: 0,
-      pause_resume: 'Pause',
-      operation_list: ['Pick wiring harness', 'Insert connector', 'Route cables', 'Tape'],
+      paused_bool: false,
+      operation_list: ['Error loading operations'],//['Pick wiring harness', 'Insert connector', 'Route cables', 'Tape'],
       op_selected: 0,
       ATC_robots: ['right', 'left'],
       ATC_tools: ['taping_gun', 'gripper'],
@@ -230,7 +239,7 @@ export default {
       group_selected: '',
       //group_configs: [], //Get with a service
       config_selected: '',
-      control_opt: 1,
+      control_opt: 0,
       manual_opt: 0,
       robot_moving: false,
       cartesian_position_rel_right: {'X': 0, 'Y': 0, 'Z': 0, 'Rx': 0, 'Ry': 0, 'Rz': 0},
@@ -238,17 +247,30 @@ export default {
       cartesian_position_abs_right: {'X': 0, 'Y': 0, 'Z': 0, 'Rx': 0, 'Ry': 0, 'Rz': 0},
       cartesian_position_abs_left: {'X': 0, 'Y': 0, 'Z': 0, 'Rx': 0, 'Ry': 0, 'Rz': 0},
       logs: [], //['Logs console...'],
+      feedback_msgs: [{name: 'Speed right', val: '30 mm/s'}, {name: 'Speed left', val: '30 mm/s'}, {name: 'Right EEF status', val: 'Gripper open'}, {name: 'Left EEF status', val: 'Gripper closed'}, {name: 'Last process time', val: '1:26 min'}]
     }
   },
 
   methods: {
     init_subscribers(){
+      this.index_topic = new ROSLIB.Topic({
+        ros : this.ros,
+        name : '/UI/process_index',
+        messageType : 'std_msgs/Int32'
+      });
+      this.index_topic.subscribe((message) => {
+        if(message.data >= this.operation_list.length){
+          this.op_selected = 0
+        }else{
+          this.op_selected = message.data;
+        }
+      });
+
       this.rviz_image1_topic = new ROSLIB.Topic({
         ros : this.ros,
         name : '/camera1/image/compressed',
         messageType : 'sensor_msgs/CompressedImage'
       });
-      
       this.rviz_image1_topic.subscribe((message) => {
         //console.log('RVIZ image 1 updated');
         if (this.rviz_image1_topic.name == this.camera_selected){
@@ -261,8 +283,7 @@ export default {
         ros : this.ros,
         name : '/camera2/image/compressed',
         messageType : 'sensor_msgs/CompressedImage'
-      });
-      
+      });      
       this.rviz_image2_topic.subscribe((message) => {
         //console.log('RVIZ image 2 updated');
         if (this.rviz_image2_topic.name == this.camera_selected){
@@ -270,11 +291,57 @@ export default {
           this.rviz_image = "data:image/jpg;base64," + message.data;
         }
       });
+
+      this.rviz_image3_topic = new ROSLIB.Topic({
+        ros : this.ros,
+        name : '/camera3/image/compressed',
+        messageType : 'sensor_msgs/CompressedImage'
+      });      
+      this.rviz_image3_topic.subscribe((message) => {
+        //console.log('RVIZ image 3 updated');
+        if (this.rviz_image3_topic.name == this.camera_selected){
+          this.last_time = Date.now();
+          this.rviz_image = "data:image/jpg;base64," + message.data;
+        }
+      });
+
+      this.topic_mode = new ROSLIB.Topic({
+        ros : this.ros,
+        name : '/UI/mode',
+        messageType : 'std_msgs/String'
+      });
+      this.topic_mode.subscribe((message) => {
+        this.modeProp = message.data;
+      });
+
+      this.topic_logs = new ROSLIB.Topic({
+        ros : this.ros,
+        name : '/UI/logs',
+        messageType : 'std_msgs/String'
+      });
+      this.topic_logs.subscribe((message) => {
+        this.add_logs(message.data);
+      });
     },
 
     stop_subscribers(){
+      if(this.index_topic){
+        this.index_topic.unsubscribe();
+      }
+      if(this.topic_mode){
+        this.topic_mode.unsubscribe();
+      }
+      if(this.topic_logs){
+        this.topic_logs.unsubscribe();
+      }
       if (this.rviz_image1_topic){
         this.rviz_image1_topic.unsubscribe();
+      }
+      if (this.rviz_image2_topic){
+        this.rviz_image2_topic.unsubscribe();
+      }
+      if (this.rviz_image3_topic){
+        this.rviz_image3_topic.unsubscribe();
       }
     },
 
@@ -294,12 +361,21 @@ export default {
             name : '/UI/move_group',
             serviceType : 'test_pkg/MoveGroupSrv'
         });
+        this.get_all_operations_service = new ROSLIB.Service({
+            ros : this.ros,
+            name : '/ELVEZ_platform_handler/all_operations',
+            serviceType : 'elvez_pkg/all_operations'
+        });
+        this.get_mode_service = new ROSLIB.Service({
+            ros : this.ros,
+            name : '/UI/get_mode',
+            serviceType : 'std_srvs/Trigger'
+        });
     },
 
     update_variables(){
       this.robot_groups={}
-      var request = new ROSLIB.ServiceRequest({});
-  
+      var request = new ROSLIB.ServiceRequest({});  
       this.get_moveit_groups_service.callService(request, (result) => {
         for (const [key, value] of Object.entries(result.groups)) {
           //groups_temp = {}
@@ -309,6 +385,64 @@ export default {
           }
         }
       });
+      //
+      this.operation_list = []
+      var request = new ROSLIB.ServiceRequest({});  
+      this.get_all_operations_service.callService(request, (result) => {
+        for (const [key, value] of Object.entries(result.data)) {
+          var message=''
+          if (value.type=='PC'){
+            message='Place connector ' + (value.label[0]) + " in " + (value.spot[0].jig)
+          }
+          else if (value.type=='RC'){
+            var guides = ''
+            for (const [key2, spot] of Object.entries(value.spot)){
+              guides += (spot.jig) + "-"
+            }
+            message='Route cables of ' + (value.label[0]) + " along " + guides.substring(0, guides.length-1)
+          }
+          else{
+            message=value.type
+          }
+          this.operation_list.push(message)
+        }
+      });
+    },
+
+    check_mode(){
+      var request = new ROSLIB.ServiceRequest({});  
+      this.get_mode_service.callService(request, (result) => {
+        this.modeProp = result.message
+        if (result.message == "Running"){
+          this.robot_moving = true
+        }
+      });
+    },
+
+    publish_bool(topic, message){
+      var boolPublisher = new ROSLIB.Topic({
+        ros : this.ros,
+        name : topic,
+        messageType : 'std_msgs/Bool'
+      });
+      var boolTopic = new ROSLIB.Message({
+          data: message
+      });
+      boolPublisher.publish(boolTopic);
+      console.log(this.rosCon)
+    },
+
+    publish_int(topic, message){
+      var intPublisher = new ROSLIB.Topic({
+        ros : this.ros,
+        name : topic,
+        messageType : 'std_msgs/Int32'
+      });
+      var intMsg = new ROSLIB.Message({
+          data: message
+      });
+      intPublisher.publish(intMsg);
+      console.log(this.rosCon)
     },
 
     publish_string(topic, message){
@@ -423,16 +557,18 @@ export default {
       }
   
       console.log("Robot moving...")
-      this.add_logs("Moving " + request.group.toString() + "...")
+      this.add_logs("(Manual) Moving " + request.group.toString() + "...")
       this.robot_moving = true
+      this.publish_string_constant('/UI/mode','Running')
       this.move_group_service.callService(request, (result) => {
         console.log(result.success)
         if (result.success){
-          this.add_logs("Successful motion.")
+          this.add_logs("(Manual) Successful motion.")
         }else{
-          this.add_logs("Motion failure.")
+          this.add_logs("(Manual) Motion failure.")
         }
         this.robot_moving = false
+        this.publish_string_constant('/UI/mode','Idle')
       });
     },
 
@@ -498,6 +634,7 @@ export default {
       this.init_subscribers()
       this.init_services()
       this.update_variables()
+      this.check_mode()
       this.reset_cartesian('both', 2)
     })
 
@@ -557,6 +694,7 @@ export default {
 }
 .video{
   border: 2px solid #1d1b31;
+  background-color: #303030;
   margin-top: 30px;
 }
 .camera_selection{
@@ -648,10 +786,13 @@ button{
   display: block;
 }
 .block_items{
-  background: red;
   margin: auto;
 }
-
+.inline_items_feedback{
+  display: inline-block;
+  padding: 2px;
+  margin: 2px;
+}
 .cartesian .inline_items *{
   justify-content: right;
   text-align: right;
@@ -778,5 +919,19 @@ option{
   font-size: 11px;
   margin-left: 2px;
   margin-right: 2px;
+}
+.feedback_name{
+  width: 150px;
+  margin-right: 5px;
+  text-align: right;
+}
+.feedback_value{
+  background-color: #716f8c;
+  color: #1d1b31;
+  padding: 3px;
+  padding-left: 5px;
+  border-radius: 5px;
+  width: 150px;
+  text-align: left;
 }
 </style>

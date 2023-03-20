@@ -6,7 +6,7 @@
     <div class="content">
         <div class= "launchers">
             <ul v-for="(launcher, key) in launchers" :key="key">
-                <li>
+                <li class="launcherID" :class="launcher.name">
                     <p>{{launcher.name}}</p>
                     <button @click="launch_start(key)" :disabled="launcher.active!='gray' || global_launching">Launch</button>
                     <button @click="launch_stop(key)" :disabled="(launcher.active!='green' && launcher.active!='red') || global_launching">Stop</button>
@@ -34,8 +34,9 @@ export default {
       launchers: {
         1: {name: 'Robot demo', launch_files:[{pkg: 'motoman/motoman_sda10f_moveit_config', file: 'demo_no_gripper_camera'}], active: 'gray', nodes:['/joint_state_publisher','/move_group','/robot_state_publisher']},
         2: {name: 'CAD Platform', launch_files:[{pkg: 'elvez_pkg', file: 'launcher'}], active: 'gray', nodes:['/ATC_rf','/UC2_handler','/combs_rf','/platform_rf']}, 
-        3: {name: 'Manual control', launch_files:[{pkg: 'test_pkg', file: 'moveit_manual'}], active: 'gray', nodes:['/moveit_manual']},
-        4: {name: 'Test', launch_files:[{pkg: 'test_pkg', file: 'print_loop'}], active: 'gray', nodes:['/print_loop_node','/print_loop_node_infinite']},
+        3: {name: 'Process control', launch_files:[{pkg: 'force_control_routing_pkg', file: 'process'}], active: 'gray', nodes:['/elvez_process_action_server','/process_action_client']},
+        4: {name: 'Manual control', launch_files:[{pkg: 'test_pkg', file: 'moveit_manual'}], active: 'gray', nodes:['/moveit_manual']},
+        // 5: {name: 'Test', launch_files:[{pkg: 'test_pkg', file: 'print_loop'}], active: 'gray', nodes:['/print_loop_node','/print_loop_node_infinite']},
         99: {name: 'All', launch_files:[], active: 'gray', nodes:['']},
       },
       global_launching: false,
@@ -164,6 +165,9 @@ export default {
                   this.launchers[launcher_id].active = 'gray';
                   this.global_launching = false
               }
+              else if (launcher_id==99){
+                this.launch_stop(99)
+              }
           });
       }, 2500)
     },
@@ -195,10 +199,8 @@ export default {
     },
 
     getLaunchersState(){
-      console.log("AAA")
       this.ros.getNodes((nodes) => {
           console.log(nodes)
-          console.log("BBB")
           for (const [key, value] of Object.entries(this.launchers)) {
             if (value.active != 'orange'){
               console.log(key)
@@ -291,7 +293,7 @@ export default {
 .launchers{
     background-color: #716f8c;
     width: fit-content;
-    padding: 1px;
+    padding: 0px;
     align-items: center;
     text-align: center;
     border-radius: 15px;
@@ -320,6 +322,17 @@ li p{
     margin-right: 30px;
     text-align: right;
 }
+.launcherID.All{
+  background: #1d1b31;
+  margin-bottom: 0;
+  margin-left: 0;
+  margin-right: 0;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  border-radius: 10px;
+  border-top-left-radius: 0px;
+  border-top-right-radius: 0px;
+}
 button{
     width: 120px;
     height: 50px;
@@ -327,6 +340,9 @@ button{
     margin: 10px;
     border: 1px solid #1d1b31;
     border-radius: 5px;
+}
+.launcherID.All button{
+  border: 1px solid #716f8c;
 }
 .dot {
     height: 25px;
