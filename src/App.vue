@@ -2,6 +2,7 @@
     <div class='page_bkg'>
     <div>
       <VueSidebarMenuAkahon page='Home' :rosCon="rosCon" :modeProp="modeProp" :profileRole="role" :profileName="username" :isLoggedIn="login_bool" @button-exit-clicked="checkLogout"/>
+      <Alarms :rosCon="rosCon"/>
     </div>
     <div v-if=!login_bool>
       <LoginMenu @login="checkLogin"/>
@@ -16,11 +17,12 @@
 import VueSidebarMenuAkahon from '@/components/Sidebar-menu-akahon.vue';
 import TitlePage from '@/components/Title_page.vue';
 import LoginMenu from './components/Login_menu.vue';
+import Alarms from './views/Alarms.vue';
 
 export default {
   name: 'App',
 
-  components: {VueSidebarMenuAkahon, LoginMenu},
+  components: {VueSidebarMenuAkahon, LoginMenu, Alarms},
 
   data(){
     return{
