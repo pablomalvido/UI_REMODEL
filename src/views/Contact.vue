@@ -2,6 +2,7 @@
     <div>
       <TitlePage page='Contact-REMODEL'/>
     </div>
+
     
     <h1>Check out our online handles and repositories here</h1>
 

@@ -46,9 +46,11 @@ export default {
   top: 0;
   height: 70px;
   width: 100%;
-  /* overflow-y: auto;
+  overflow-y: auto;
   background: var(--bg-color);
-  padding: 6px 14px 0 14px; */
+  padding: 6px 14px 0 14px;
   z-index: 1;
 }
+
+
 </style>
