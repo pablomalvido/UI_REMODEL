@@ -21,7 +21,7 @@ export default {
     data(){
         return{
             rosCon: false,
-            listener_reset = null,
+            listener_reset: null,
             alarm_title: "ALARMS",
             active_alarms: [],
             inactive_alarms: [],
