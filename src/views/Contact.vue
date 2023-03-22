@@ -100,7 +100,7 @@ components: {TitlePage},
 #logo_coordinator{
     width:30%;
     height:100%;
-    min-width:33%;
+    min-width:45%;
     object-fit: cover;
     margin-left: 45%;
 }
