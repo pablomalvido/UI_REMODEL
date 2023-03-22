@@ -77,8 +77,9 @@ export default {
   },
 
   mounted(){
+    this.url = 'ws://' + (((window.location.href).split("/")[2]).split(":")[0]) + ':9090';
     this.ros = new ROSLIB.Ros({
-      url : 'ws://192.168.43.168:9090' //Port = 9090
+        url : this.url //'ws://192.168.43.168:9090'
     });
     console.log(this.ros)
     
