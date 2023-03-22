@@ -31,6 +31,7 @@ export default {
       menuOpen: true,
       topic_mode: null,
       topic_logs: null,
+      topic_safety: null,
       logs: [],
       login_bool: false,
       role: 'not_login', //Requires an initial value (not empty)
@@ -79,6 +80,21 @@ export default {
         console.log('Received message on ' + this.topic_mode.name + ': ' + message.data);
         // this.logs.unshift(message)
       });
+
+      this.topic_safety = new ROSLIB.Topic({
+        ros : this.ros,
+        name : '/RSM/safety_ok',
+        messageType : 'std_msgs/Bool'
+      });
+      this.topic_safety.subscribe(function(message) {
+        console.log('Received message on ' + listener_safety.name + ': ' + message.data);
+        if(message.data && this.modeProp == "Alarm"){
+          this.modeProp = "Idle"
+        } else {
+          this.modeProp = "Alarm"
+        }			
+        console.log("Safety updated");
+      });
     },
 
     checkLogin(value){
@@ -100,8 +116,9 @@ export default {
   },
 
   mounted(){
+    this.url = 'ws://' + (((window.location.href).split("/")[2]).split(":")[0]) + ':9090';
     this.ros = new ROSLIB.Ros({
-      url : 'ws://192.168.43.168:9090' //Port = 9090
+        url : this.url //'ws://192.168.43.168:9090'
     });
     console.log(this.ros)
     
