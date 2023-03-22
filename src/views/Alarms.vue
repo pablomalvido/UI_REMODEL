@@ -239,6 +239,7 @@ export default {
     align-items: center;
     justify-content: center;
     color: white;
+    border-radius: 10%;
 }
 #Alarm_title{
     margin:20%;
