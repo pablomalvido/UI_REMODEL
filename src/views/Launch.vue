@@ -34,9 +34,9 @@ export default {
       launchers: {
         1: {name: 'Robot demo', launch_files:[{pkg: 'motoman/motoman_sda10f_moveit_config', file: 'demo_no_gripper_camera'}], active: 'gray', nodes:['/joint_state_publisher','/move_group','/robot_state_publisher']},
         2: {name: 'CAD Platform', launch_files:[{pkg: 'elvez_pkg', file: 'launcher'}], active: 'gray', nodes:['/ATC_rf','/UC2_handler','/combs_rf','/platform_rf']}, 
-        3: {name: 'Process control', launch_files:[{pkg: 'force_control_routing_pkg', file: 'process'}], active: 'gray', nodes:['/elvez_process_action_server','/process_action_client']},
-        4: {name: 'Manual control', launch_files:[{pkg: 'test_pkg', file: 'moveit_manual'}], active: 'gray', nodes:['/moveit_manual']},
-        5: {name: 'Configuration', launch_files:[{pkg: 'test_pkg', file: 'config'}], active: 'gray', nodes:['/config_node']},        
+        3: {name: 'Process control', launch_files:[{pkg: 'UI_nodes_pkg', file: 'process'}], active: 'gray', nodes:['/elvez_process_action_server','/process_action_client']},
+        4: {name: 'Manual control', launch_files:[{pkg: 'UI_nodes_pkg', file: 'moveit_manual'}], active: 'gray', nodes:['/moveit_manual']},
+        5: {name: 'Configuration', launch_files:[{pkg: 'UI_nodes_pkg', file: 'config'}], active: 'gray', nodes:['/config_node']},        
         // 6: {name: 'Test', launch_files:[{pkg: 'test_pkg', file: 'print_loop'}], active: 'gray', nodes:['/print_loop_node','/print_loop_node_infinite']},
         99: {name: 'All', launch_files:[], active: 'gray', nodes:['']},
       },
