@@ -196,7 +196,7 @@
           },
           {
             link: '#',
-            page: 'home',
+            page: 'alarms',
             name: 'Alarms',
             tooltip: 'Alarms',
             icon: 'bx-error',
@@ -204,7 +204,7 @@
           {
             link: '#',
             name: 'Configuration',
-            page: 'home',
+            page: 'config',
             tooltip: 'Configuration',
             icon: 'bx-cog',
           },
