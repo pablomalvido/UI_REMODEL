@@ -204,7 +204,7 @@
           {
             link: '#',
             name: 'Configuration',
-            page: 'home',
+            page: 'config',
             tooltip: 'Configuration',
             icon: 'bx-cog',
           },

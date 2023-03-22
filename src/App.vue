@@ -17,12 +17,11 @@
 import VueSidebarMenuAkahon from '@/components/Sidebar-menu-akahon.vue';
 import TitlePage from '@/components/Title_page.vue';
 import LoginMenu from './components/Login_menu.vue';
-import Alarms from './views/Alarms.vue';
 
 export default {
   name: 'App',
 
-  components: {VueSidebarMenuAkahon, LoginMenu, Alarms},
+  components: {VueSidebarMenuAkahon, LoginMenu},
 
   data(){
     return{
