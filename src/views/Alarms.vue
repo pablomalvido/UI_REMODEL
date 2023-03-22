@@ -56,7 +56,7 @@ export default {
     },
 
     methods: {
-        init_subscriber(){
+        init_subscribers(){
             this.listener_reset = new ROSLIB.Topic({
                 ros : this.ros,
                 name : '/RSM/reset',  // /RSM/ROS_reset for tests
@@ -75,7 +75,7 @@ export default {
                     ros : this.ros,
                     name : '/RSM/problems',  //Change this for your topic name
                     messageType : 'remodel_safety_manager/RSM_problems' //Change this for your topic type
-                });
+            });
             this.listener_alarms.subscribe((message) => {
                 console.log('Received message on ' + this.listener_alarms.name + ': ' + message.curtain_det);
                 this.active_alarms_temp = [];
@@ -141,6 +141,18 @@ export default {
             });
         },
 
+        stop_subscribers(){
+            if(this.listener_reset){
+                this.listener_reset.unsubscribe();
+            }
+            if(this.listener_alarms){
+                this.listener_alarms.unsubscribe();
+            }
+            if(this.listener_safety){
+                this.listener_safety.unsubscribe();
+            }
+        }, 
+
         check_RSM_connection(){ //App.vue must check this constantly and Publish safety not ok if the connection is not stablished
             this.ros.getNodes((nodes) => {
                 if (nodes.includes(this.RSM_node_name)){                        
@@ -162,16 +174,16 @@ export default {
         },
 
         reset_alarms(){      
-        console.log("Reset function");
-        this.resetPublisher = new ROSLIB.Topic({
-            ros : this.ros,
-            name : '/RSM/ROS_reset',
-            messageType : 'std_msgs/Bool'
-        });
-        this.resetTopic = new ROSLIB.Message({
-            data: true
-        });
-        resetPublisher.publish(resetTopic);
+            console.log("Reset function");
+            this.resetPublisher = new ROSLIB.Topic({
+                ros : this.ros,
+                name : '/RSM/ROS_reset',
+                messageType : 'std_msgs/Bool'
+            });
+            this.resetTopic = new ROSLIB.Message({
+                data: true
+            });
+            resetPublisher.publish(resetTopic);
         },
     },
 
@@ -184,7 +196,7 @@ export default {
         this.ros.on('connection', () => {
             console.log('Connected to websocket server.');
             this.rosCon = true
-            this.init_subscriber()
+            this.init_subscribers()
             //this.check_RSM_connection()
         });
         this.ros.on('error', (error) => {
@@ -198,6 +210,7 @@ export default {
     },
 
     unmounted(){
+        this.stop_subscribers()
         this.ros.close()
     }
 }
