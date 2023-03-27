@@ -44,7 +44,7 @@ export default {
             resetPublisher:null,
             resetTopic:null,
             update_safety_topic: null,
-            RSM_node_name: 'RSM_PLC_connection',
+            RSM_node_name: '/RSM_PLC_connection',
             safety_status: 2,//0, //0: Alarm, 1: Safety OK, 2: Not connected to RSM
             active_alarms: [],//['Emergency stop button', 'Door of the cell open'],
             inactive_alarms: [],//['Light curtain detection'],
@@ -121,7 +121,7 @@ export default {
                 
 		        this.active_alarms = this.active_alarms_temp;
 		        this.inactive_alarms = this.inactive_alarms_temp;
-		        console.log("Inactive alarms: " + test_)
+		        console.log("Inactive alarms: " + this.test_)
                 console.log("Alarms updated");
             });   
 
@@ -155,6 +155,8 @@ export default {
 
         check_RSM_connection(){ //App.vue must check this constantly and Publish safety not ok if the connection is not stablished
             this.ros.getNodes((nodes) => {
+                console.log(nodes)
+                console.log(this.RSM_node_name)
                 if (nodes.includes(this.RSM_node_name)){                        
                     this.update_safety_topic = new ROSLIB.Topic({
                         ros : this.ros,
@@ -183,7 +185,7 @@ export default {
             this.resetTopic = new ROSLIB.Message({
                 data: true
             });
-            resetPublisher.publish(resetTopic);
+            this.resetPublisher.publish(this.resetTopic);
         },
     },
 
@@ -197,7 +199,7 @@ export default {
             console.log('Connected to websocket server.');
             this.rosCon = true
             this.init_subscribers()
-            //this.check_RSM_connection()
+            this.check_RSM_connection()
         });
         this.ros.on('error', (error) => {
             console.log('Error connecting to websocket server: ', error);

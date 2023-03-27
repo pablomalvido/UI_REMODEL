@@ -37,7 +37,8 @@ export default {
         3: {name: 'Process control', launch_files:[{pkg: 'UI_nodes_pkg', file: 'process'}], active: 'gray', nodes:['/elvez_process_action_server','/process_action_client']},
         4: {name: 'Manual control', launch_files:[{pkg: 'UI_nodes_pkg', file: 'moveit_manual'}], active: 'gray', nodes:['/moveit_manual']},
         5: {name: 'Configuration', launch_files:[{pkg: 'UI_nodes_pkg', file: 'config'}], active: 'gray', nodes:['/config_node']},        
-        // 6: {name: 'Test', launch_files:[{pkg: 'test_pkg', file: 'print_loop'}], active: 'gray', nodes:['/print_loop_node','/print_loop_node_infinite']},
+        6: {name: 'Safety manager', launch_files:[{pkg: 'remodel_safety_manager', file: 'RSM'}], active: 'gray', nodes:['/RSM_PLC_connection']},                
+        // 7: {name: 'Test', launch_files:[{pkg: 'test_pkg', file: 'print_loop'}], active: 'gray', nodes:['/print_loop_node','/print_loop_node_infinite']},
         99: {name: 'All', launch_files:[], active: 'gray', nodes:['']},
       },
       global_launching: false,
@@ -319,7 +320,7 @@ li *{
     vertical-align: middle;
 }
 li p{
-    width: 160px;
+    width: 180px;
     font-size: 20px;
     margin-right: 30px;
     text-align: right;
