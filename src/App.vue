@@ -14,8 +14,8 @@
 </template>
 
 <script>
+import ROSLIB from "roslib";
 import VueSidebarMenuAkahon from '@/components/Sidebar-menu-akahon.vue';
-import TitlePage from '@/components/Title_page.vue';
 import LoginMenu from './components/Login_menu.vue';
 
 export default {

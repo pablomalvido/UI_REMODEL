@@ -26,6 +26,7 @@
 </template>
 
 <script>
+import ROSLIB from "roslib";
 import TitlePage from '@/components/Title_page.vue';
 
 export default {

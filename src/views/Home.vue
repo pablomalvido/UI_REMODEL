@@ -173,7 +173,7 @@
     </div>
     <div class="right_content">
       <div class="feedback">
-        <h3>Feedback</h3>
+        <h3>Status</h3>
       <ul class="block_items" v-for="(value, key) in feedback_msgs" :key="key">
         <il>
           <label class="feedback_name inline_items_feedback">{{value.name}}: </label>
@@ -195,7 +195,7 @@
 </template>
 
 <script>
-import VueSidebarMenuAkahon from '@/components/Sidebar-menu-akahon.vue';
+import ROSLIB from "roslib";
 import TitlePage from '@/components/Title_page.vue';
 
 export default {
@@ -248,7 +248,7 @@ export default {
       cartesian_position_abs_right: {'X': 0, 'Y': 0, 'Z': 0, 'Rx': 0, 'Ry': 0, 'Rz': 0},
       cartesian_position_abs_left: {'X': 0, 'Y': 0, 'Z': 0, 'Rx': 0, 'Ry': 0, 'Rz': 0},
       logs: [], //['Logs console...'],
-      feedback_msgs: [{prop: "speed_right", name: 'Speed right', val: '30 mm/s'}, {prop: "speed_left", name: 'Speed left', val: '30 mm/s'}, {prop: "eef_right_status", name: 'Right EEF status', val: 'Gripper open'}, {prop: "eef_left_status", name: 'Left EEF status', val: 'Gripper closed'}, {prop: "process_time", name: 'Process time', val: '00:00'}]
+      feedback_msgs: [{prop: "speed_right", name: 'Speed right', val: '0.0 mm/s'}, {prop: "speed_left", name: 'Speed left', val: '0.0 mm/s'}, {prop: "eef_right_status", name: 'Right EEF status', val: 'Gripper open'}, {prop: "eef_left_status", name: 'Left EEF status', val: 'Gripper closed'}, {prop: "process_time", name: 'Process time', val: '00:00'}]
     }
   },
 
@@ -345,13 +345,13 @@ export default {
         ros : this.ros,
         name : '/UI/feedback',
         messageType : 'UI_nodes_pkg/configProp',
-        //messageType : 'std_msgs/String'
+        //messageType : 'std_msgs/String'topic_feedback
       });
       this.topic_feedback.subscribe((message) => {
         //this.feedback_msgs[0].val = message.value;
         for (const [key, value] of Object.entries(this.feedback_msgs)) {
-          if(this.value.prop.includes(message.prop)){
-            this.value.val = message.value;
+          if(value.prop.includes(message.prop)){
+            value.val = message.value;
             break;
           }
         }
@@ -367,6 +367,9 @@ export default {
       }
       if(this.topic_logs){
         this.topic_logs.unsubscribe();
+      }
+      if(this.topic_feedback){
+        this.topic_feedback.unsubscribe();
       }
       for (const [key, value] of Object.entries(this.rviz_image_topics)) {
         if (value){
@@ -390,17 +393,17 @@ export default {
         this.get_arms_pose_service = new ROSLIB.Service({
             ros : this.ros,
             name : '/UI/get_arms_pose',
-            serviceType : 'test_pkg/ArmsPose'
+            serviceType : 'UI_nodes_pkg/ArmsPose'
         });
         this.get_moveit_groups_service = new ROSLIB.Service({
             ros : this.ros,
             name : '/UI/get_moveit_groups',
-            serviceType : 'test_pkg/MoveitGroups'
+            serviceType : 'UI_nodes_pkg/MoveitGroups'
         });
         this.move_group_service = new ROSLIB.Service({
             ros : this.ros,
             name : '/UI/move_group',
-            serviceType : 'test_pkg/MoveGroupSrv'
+            serviceType : 'UI_nodes_pkg/MoveGroupSrv'
         });
         this.get_all_operations_service = new ROSLIB.Service({
             ros : this.ros,
