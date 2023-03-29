@@ -21,6 +21,7 @@
 </template>
 
 <script>
+import ROSLIB from "roslib";
 import TitlePage from '@/components/Title_page.vue';
 
 export default {
@@ -69,12 +70,12 @@ export default {
         this.get_config_service = new ROSLIB.Service({
             ros : this.ros,
             name : '/UI/get_config',
-            serviceType : 'test_pkg/GetConfig'
+            serviceType : 'UI_nodes_pkg/GetConfig'
         });
         this.set_config_service = new ROSLIB.Service({
             ros : this.ros,
             name : '/UI/set_config',
-            serviceType : 'test_pkg/SetConfig'
+            serviceType : 'UI_nodes_pkg/SetConfig'
         });
     },
 

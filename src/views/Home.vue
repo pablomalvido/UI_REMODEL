@@ -8,8 +8,8 @@
       <h3>Robot Control</h3>
       <div class="enable">
         <label> Robot motion: </label>
-        <button @click="publish_string('/topic_UI2',{msg})">Enable</button>
-        <button @click="publish_string('/topic_UI2',{msg})">Disable</button>
+        <button>Enable</button>
+        <button>Disable</button>
       </div>
       <div class="radiobuttons">
         <input type="radio" v-model="control_opt" value="0">Process control
@@ -54,7 +54,7 @@
             <option disabled value="">Please Select</option>
             <option v-for="(group, index) in robot_groups" :key="index" :value="index">{{index}}</option>
           </select>
-          <label>Tool: </label>
+          <label>Config: </label>
           <select v-model="config_selected">
             <option disabled value="">Please Select</option>
             <option v-for="(config, index) in robot_groups[group_selected]" :key="index" :value="config">{{config}}</option>
@@ -120,13 +120,13 @@
             <label> gripper</label>
             <input type="text" v-model="tools[value]['distance']">
             <label class="unit">mm</label>
-            <button class="small_button" @click="publish_string('/topic_UI2',{msg})">Move</button>
-            <button class="small_button" @click="publish_string('/topic_UI2',{msg})">Open</button>
-            <button class="small_button" @click="publish_string('/topic_UI2',{msg})">Close</button>
+            <button class="small_button">Move</button>
+            <button class="small_button">Open</button>
+            <button class="small_button">Close</button>
           </div>
           <div v-else-if="value.includes('taping_gun')">
             <label> taping gun</label>
-            <button class="small_button" @click="publish_string('/topic_UI2',{msg})">Tape</button>
+            <button class="small_button">Tape</button>
           </div>
           <div v-else>
             <label> none</label>
@@ -148,7 +148,7 @@
           <!-- <option disabled value="">Please Select</option> -->
           <option v-for="(tool, index) in ATC_tools" :key="index" :value="tool">{{tool}}</option>
         </select>
-        <button class="medium_button" @click="publish_string('/topic_UI2',{msg})">Change</button>
+        <button class="medium_button">Change</button>
       </div>
 
     </div>
@@ -173,7 +173,7 @@
     </div>
     <div class="right_content">
       <div class="feedback">
-        <h3>Feedback</h3>
+        <h3>Status</h3>
       <ul class="block_items" v-for="(value, key) in feedback_msgs" :key="key">
         <il>
           <label class="feedback_name inline_items_feedback">{{value.name}}: </label>
@@ -195,7 +195,7 @@
 </template>
 
 <script>
-import VueSidebarMenuAkahon from '@/components/Sidebar-menu-akahon.vue';
+import ROSLIB from "roslib";
 import TitlePage from '@/components/Title_page.vue';
 
 export default {
@@ -205,7 +205,6 @@ export default {
 
   data(){
     return{
-      msg: 'Hellooo',
       rosCon: false,
       modeProp: 'Idle',
       menuOpen: true,
@@ -217,9 +216,11 @@ export default {
       index_topic: null,
       topic_mode: null,
       topic_logs: null,
-      rviz_image1_topic: null,
-      rviz_image2_topic: null,
-      rviz_image3_topic: null,
+      topic_feedback: null,
+      rviz_image_topics: [],
+      // rviz_image1_topic: null,
+      // rviz_image2_topic: null,
+      // rviz_image3_topic: null,
       rviz_image: "",
       rviz_image2: "../assets/img/placeholder.png",
       camera_list: {RVIZ_Front: "/camera1/image/compressed", RVIZ_Side: "/camera2/image/compressed", RVIZ_guides: "/camera3/image/compressed"},
@@ -247,7 +248,7 @@ export default {
       cartesian_position_abs_right: {'X': 0, 'Y': 0, 'Z': 0, 'Rx': 0, 'Ry': 0, 'Rz': 0},
       cartesian_position_abs_left: {'X': 0, 'Y': 0, 'Z': 0, 'Rx': 0, 'Ry': 0, 'Rz': 0},
       logs: [], //['Logs console...'],
-      feedback_msgs: [{name: 'Speed right', val: '30 mm/s'}, {name: 'Speed left', val: '30 mm/s'}, {name: 'Right EEF status', val: 'Gripper open'}, {name: 'Left EEF status', val: 'Gripper closed'}, {name: 'Last process time', val: '1:26 min'}]
+      feedback_msgs: [{prop: "speed_right", name: 'Speed right', val: '0.0 mm/s'}, {prop: "speed_left", name: 'Speed left', val: '0.0 mm/s'}, {prop: "eef_right_status", name: 'Right EEF status', val: 'Gripper open'}, {prop: "eef_left_status", name: 'Left EEF status', val: 'Gripper closed'}, {prop: "process_time", name: 'Process time', val: '00:00'}]
     }
   },
 
@@ -266,6 +267,22 @@ export default {
         }
       });
 
+      for (const [key, value] of Object.entries(this.camera_list)) {
+        this.rviz_image_topics[key.toString()] = new ROSLIB.Topic({
+          ros : this.ros,
+          name : value,
+          messageType : 'sensor_msgs/CompressedImage'
+        });
+        this.rviz_image_topics[key.toString()].subscribe((message) => {
+          //console.log('RVIZ image ' + key.toString() + ' updated');
+          if (value == this.camera_selected){
+            this.last_time = Date.now();
+            this.rviz_image = "data:image/jpg;base64," + message.data;
+          }
+        });
+      }
+
+      /*
       this.rviz_image1_topic = new ROSLIB.Topic({
         ros : this.ros,
         name : '/camera1/image/compressed',
@@ -304,6 +321,7 @@ export default {
           this.rviz_image = "data:image/jpg;base64," + message.data;
         }
       });
+      */
 
       this.topic_mode = new ROSLIB.Topic({
         ros : this.ros,
@@ -322,6 +340,22 @@ export default {
       this.topic_logs.subscribe((message) => {
         this.add_logs(message.data);
       });
+
+      this.topic_feedback = new ROSLIB.Topic({
+        ros : this.ros,
+        name : '/UI/feedback',
+        messageType : 'UI_nodes_pkg/configProp',
+        //messageType : 'std_msgs/String'topic_feedback
+      });
+      this.topic_feedback.subscribe((message) => {
+        //this.feedback_msgs[0].val = message.value;
+        for (const [key, value] of Object.entries(this.feedback_msgs)) {
+          if(value.prop.includes(message.prop)){
+            value.val = message.value;
+            break;
+          }
+        }
+      });
     },
 
     stop_subscribers(){
@@ -334,6 +368,15 @@ export default {
       if(this.topic_logs){
         this.topic_logs.unsubscribe();
       }
+      if(this.topic_feedback){
+        this.topic_feedback.unsubscribe();
+      }
+      for (const [key, value] of Object.entries(this.rviz_image_topics)) {
+        if (value){
+          value.unsubscribe();
+        }
+      }
+      /*
       if (this.rviz_image1_topic){
         this.rviz_image1_topic.unsubscribe();
       }
@@ -343,23 +386,24 @@ export default {
       if (this.rviz_image3_topic){
         this.rviz_image3_topic.unsubscribe();
       }
+      */
     },
 
     init_services(){
         this.get_arms_pose_service = new ROSLIB.Service({
             ros : this.ros,
             name : '/UI/get_arms_pose',
-            serviceType : 'test_pkg/ArmsPose'
+            serviceType : 'UI_nodes_pkg/ArmsPose'
         });
         this.get_moveit_groups_service = new ROSLIB.Service({
             ros : this.ros,
             name : '/UI/get_moveit_groups',
-            serviceType : 'test_pkg/MoveitGroups'
+            serviceType : 'UI_nodes_pkg/MoveitGroups'
         });
         this.move_group_service = new ROSLIB.Service({
             ros : this.ros,
             name : '/UI/move_group',
-            serviceType : 'test_pkg/MoveGroupSrv'
+            serviceType : 'UI_nodes_pkg/MoveGroupSrv'
         });
         this.get_all_operations_service = new ROSLIB.Service({
             ros : this.ros,

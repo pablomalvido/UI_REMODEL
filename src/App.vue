@@ -14,8 +14,8 @@
 </template>
 
 <script>
+import ROSLIB from "roslib";
 import VueSidebarMenuAkahon from '@/components/Sidebar-menu-akahon.vue';
-import TitlePage from '@/components/Title_page.vue';
 import LoginMenu from './components/Login_menu.vue';
 
 export default {
@@ -86,8 +86,8 @@ export default {
         name : '/RSM/safety_ok',
         messageType : 'std_msgs/Bool'
       });
-      this.topic_safety.subscribe(function(message) {
-        console.log('Received message on ' + listener_safety.name + ': ' + message.data);
+      this.topic_safety.subscribe((message) => {
+        console.log('Received message on ' + this.topic_safety.name + ': ' + message.data);
         if(message.data && this.modeProp == "Alarm"){
           this.modeProp = "Idle"
         } else {

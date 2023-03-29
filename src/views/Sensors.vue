@@ -17,7 +17,7 @@
 </template>
 
 <script>
-import VueSidebarMenuAkahon from '@/components/Sidebar-menu-akahon.vue';
+import ROSLIB from "roslib";
 import TitlePage from '@/components/Title_page.vue';
 const CryptoJS = require("crypto-js");
 
