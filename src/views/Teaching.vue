@@ -45,6 +45,7 @@
           <option v-for="(traj, index) in trajectory_list" :key="index" :value="traj">{{traj}}</option>
         </select>
         <button :disabled="modeProp=='Running' || traj_selected==''" @click="exec_traj_func()">Execute</button>
+        <button :disabled="modeProp=='Running' || traj_selected==''" @click="delete_traj_func()">Delete</button>
     </div>
     </div>
 
@@ -80,6 +81,7 @@ export default {
       traj_record_service: null,
       get_trajs_service: null,
       exec_traj_service: null,
+      del_traj_service: null,
       topic_mode: null,
       robot_groups: ['R1', 'R2'],
       robot_tools: {0:'Gripper', 1:'Taping gun'},
@@ -131,6 +133,11 @@ export default {
       this.exec_traj_service = new ROSLIB.Service({
           ros : this.ros,
           name : '/execute_trajectory',
+          serviceType : 'UI_nodes_pkg/ExecTraj'
+      });
+      this.del_traj_service = new ROSLIB.Service({
+          ros : this.ros,
+          name : '/delete_trajectory',
           serviceType : 'UI_nodes_pkg/ExecTraj'
       });
     },
@@ -217,13 +224,51 @@ export default {
     exec_traj_func(){
       this.add_logs("Executing trajectory: " + this.traj_selected + "...")
       this.publish_string_constant('/UI/mode','Running')
+
+      var publisher_exec = new ROSLIB.Topic({
+        ros : this.ros,
+        name : "/trajectory_server/goal",
+        messageType : 'robot_control/TrajectoryActionGoal'
+      });
+
+      var message1 = new ROSLIB.Message({
+          file_name: this.traj_selected,
+      });
+
+      var message = new ROSLIB.Message({
+          goal: message1,
+      });
+
+      publisher_exec.publish(message);
+
+      // var request = new ROSLIB.ServiceRequest({
+      //   data: this.traj_selected,
+      // });  
+      // this.exec_traj_service.callService(request, (result) => {
+      //   this.add_logs(result.result)
+      //   this.publish_string_constant('/UI/mode','Idle')
+      // });
+      this.add_logs("Successful motion")
+      this.publish_string_constant('/UI/mode','Idle')
+    },
+
+    delete_traj_func(){
+      this.add_logs("Deleting trajectory: " + this.traj_selected + "...")
       var request = new ROSLIB.ServiceRequest({
         data: this.traj_selected,
       });  
-      this.exec_traj_service.callService(request, (result) => {
-        this.add_logs(result.result)
-        this.publish_string_constant('/UI/mode','Idle')
+      this.del_traj_service.callService(request, (result) => {
+        if(result.success){
+          this.add_logs("Deleted successfully")
+        }
+        else{
+          this.add_logs("Error deleting trajectory")
+        }
       });
+      setTimeout(() => {
+        this.updateTrajs();
+        this.traj_selected = '';
+      }, 200)
     },
 
     add_logs(msg){
@@ -245,7 +290,7 @@ export default {
       this.rosCon = true
       this.init_subscribers()
       this.init_services()
-      this.check_mode()
+      //this.check_mode()
       this.updateTrajs()
     })
 

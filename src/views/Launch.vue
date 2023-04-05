@@ -39,7 +39,7 @@ export default {
         4: {name: 'Manual control', launch_files:[{pkg: 'UI_nodes_pkg', file: 'moveit_manual'}], active: 'gray', nodes:['/moveit_manual']},
         5: {name: 'Configuration', launch_files:[{pkg: 'UI_nodes_pkg', file: 'config'}], active: 'gray', nodes:['/config_node']},        
         6: {name: 'Fake sensors', launch_files:[{pkg: 'UI_nodes_pkg', file: 'fake_sensors'}], active: 'gray', nodes:['/fake_sensors']},
-        7: {name: 'Record traj', launch_files:[{pkg: 'UI_nodes_pkg', file: 'record_traj'}], active: 'gray', nodes:['/record_traj']},
+        7: {name: 'Record traj', launch_files:[{pkg: 'uc2_single_arm/robot_control', file: 'trajectory_record'}], active: 'gray', nodes:['/trajectory_record']},
         // 8: {name: 'Safety manager', launch_files:[{pkg: 'remodel_safety_manager', file: 'RSM'}], active: 'gray', nodes:['/RSM_PLC_connection']},                
         // 9: {name: 'Test', launch_files:[{pkg: 'test_pkg', file: 'print_loop'}], active: 'gray', nodes:['/print_loop_node','/print_loop_node_infinite']},
         99: {name: 'All', launch_files:[], active: 'gray', nodes:['']},
@@ -115,7 +115,7 @@ export default {
 
     launch_start(launcher_id){
       this.global_launching = true
-      console.log(this.launchers[launcher_id])
+      // console.log(this.launchers[launcher_id])
       this.service_data = []
       for (let i = 0; i < this.launchers[launcher_id].launch_files.length; i++) {
         var launch_file_i = new ROSLIB.Message({
@@ -128,9 +128,9 @@ export default {
           data : this.service_data
       });
   
+      this.launchers[launcher_id].active = 'orange'
       this.launch_service.callService(request, (result) => {
           console.log('Result for service call on ' + this.launch_service.name + ': ' + result.success);
-          this.launchers[launcher_id].active = 'orange'
       });
       
       this.check_started(launcher_id)
@@ -159,8 +159,8 @@ export default {
           this.ros.getNodes((nodes) => {
               var killed = true;
               for (let i = 0; i < this.launchers[launcher_id].nodes.length; i++) {
-                  console.log(this.launchers[launcher_id].nodes[i])
-                  console.log(nodes)
+                  // console.log(this.launchers[launcher_id].nodes[i])
+                  // console.log(nodes)
                   if (nodes.includes(this.launchers[launcher_id].nodes[i])){
                       killed = false;
                       break; 
@@ -181,14 +181,15 @@ export default {
         this.ros.getNodes((nodes) => {
             var started = true;
             for (let i = 0; i < this.launchers[launcher_id].nodes.length; i++) {
-                console.log(this.launchers[launcher_id].nodes[i])
-                console.log(nodes)
+                // console.log(this.launchers[launcher_id].nodes[i])
+                // console.log(nodes)
                 if (!nodes.includes(this.launchers[launcher_id].nodes[i])){
                     started = false;
                     console.log("Nodes not started yet")
                     break; 
                 }
             }
+            console.log(this.launchers[launcher_id].active)
             if (started){
                 this.launchers[launcher_id].active = 'green';
                 console.log("Nodes started")
@@ -205,11 +206,11 @@ export default {
 
     getLaunchersState(){
       this.ros.getNodes((nodes) => {
-          console.log(nodes)
+          // console.log(nodes)
           for (const [key, value] of Object.entries(this.launchers)) {
             if (value.active != 'orange'){
-              console.log(key)
-              console.log(value)
+              // console.log(key)
+              // console.log(value)
               var active_num = 0;
               for (let i = 0; i < value.nodes.length; i++) {
                 if (nodes.includes(value.nodes[i])){
