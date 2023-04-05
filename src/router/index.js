@@ -6,6 +6,7 @@ import Menu from '../views/Menu.vue'
 import Contact from '../views/Contact.vue'
 import Config from '../views/Config.vue'  
 import Alarms from '../views/Alarms.vue'
+import Teaching from '../views/Teaching.vue'
 
 const routes = [
   {
@@ -32,6 +33,11 @@ const routes = [
     path: '/config/:role',
     name: 'config',
     component: Config
+  },
+  {
+    path: '/teaching/:role',
+    name: 'teaching',
+    component: Teaching
   },
   {
     path: '/contact',

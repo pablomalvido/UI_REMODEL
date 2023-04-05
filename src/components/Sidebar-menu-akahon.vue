@@ -218,7 +218,7 @@
           {
             link: '#',
             name: 'Teaching',
-            page: 'home',
+            page: 'teaching',
             tooltip: 'Teaching',
             icon: 'bx-video-recording',
           },
