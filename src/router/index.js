@@ -7,6 +7,7 @@ import Contact from '../views/Contact.vue'
 import Config from '../views/Config.vue'  
 import Alarms from '../views/Alarms.vue'
 import Teaching from '../views/Teaching.vue'
+import CadPlatform from '../views/CadPlatform.vue'
 
 const routes = [
   {
@@ -38,6 +39,11 @@ const routes = [
     path: '/teaching/:role',
     name: 'teaching',
     component: Teaching
+  },
+  {
+    path: '/cad_platform/:role',
+    name: 'cad_platform',
+    component: CadPlatform
   },
   {
     path: '/contact',

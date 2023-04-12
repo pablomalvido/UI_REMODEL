@@ -13,24 +13,45 @@
     </div> -->
 
     <div class="selection">
-    <input type="checkbox" id="fr" value="FR" v-model="checkedCharts" @click="check_graph('FR')">
-    <label for="fr">Force right</label>
 
     <input type="checkbox" id="fl" value="FL" v-model="checkedCharts" @click="check_graph('FL')">
     <label for="fl">Force left</label>
+
+    <input type="checkbox" id="fr" value="FR" v-model="checkedCharts" @click="check_graph('FR')">
+    <label for="fr">Force right</label>
+
+    <input type="checkbox" id="tl" value="TL" v-model="checkedCharts" @click="check_graph('TL')">
+    <label for="tl">Tactile left</label>
+
+    <input type="checkbox" id="tr" value="TR" v-model="checkedCharts" @click="check_graph('TR')">
+    <label for="tr">Tactile right</label>
     </div>
 
     <ul>
       <li>
         <div class ="inline_items">
+          <div v-if="checkedCharts.includes('FL')">
+            <div class="canvas_container">
+              <canvas id="chartForceL"></canvas>
+            </div>
+          </div>
           <div v-if="checkedCharts.includes('FR')">
             <div class="canvas_container">
               <canvas id="chartForceR"></canvas>
             </div>
           </div>
-          <div v-if="checkedCharts.includes('FL')">
-            <div class="canvas_container">
-              <canvas id="chartForceL"></canvas>
+        </div>
+      </li>
+      <li>
+        <div class ="inline_items">
+          <div v-if="checkedCharts.includes('TL')">
+            <div class="canvas_container_square">
+              <canvas id="chartTactileL"></canvas>
+            </div>
+          </div>
+          <div v-if="checkedCharts.includes('TR')">
+            <div class="canvas_container_square">
+              <canvas id="chartTactileR"></canvas>
             </div>
           </div>
         </div>
@@ -60,10 +81,12 @@ export default {
       username: '',
       password: '',
       role: this.$route.params.role,
-      checkedCharts: ['FR', 'FL'],
+      checkedCharts: ['FR', 'FL', 'TL', 'TR'],
       data_chart: {},
       chartForceR: null,
       chartForceL: null,
+      chartTactileR: null,
+      chartTactileL: null,
       myChartMultiple: null,
     }
   },
@@ -106,6 +129,28 @@ export default {
         this.chartForceL.data.labels = valuesX
         this.chartForceL.update();
       });
+
+      this.tactileL_topic = new ROSLIB.Topic({
+        ros : this.ros,
+        name : 'sensors/tactile_left',
+        messageType : 'UI_nodes_pkg/tactile'
+      });
+      this.tactileL_topic.subscribe((message) => {
+        this.chartTactileL.data.labels = message.x
+        this.chartTactileL.data.datasets[0].data = message.y
+        this.chartTactileL.update();
+      });
+
+      this.tactileR_topic = new ROSLIB.Topic({
+        ros : this.ros,
+        name : 'sensors/tactile_right',
+        messageType : 'UI_nodes_pkg/tactile'
+      });
+      this.tactileR_topic.subscribe((message) => {
+        this.chartTactileR.data.labels = message.x
+        this.chartTactileR.data.datasets[0].data = message.y
+        this.chartTactileR.update();
+      });
     },
 
     check_graph(graph_name){
@@ -132,6 +177,30 @@ export default {
         else{
           console.log("Destroying")
           this.chartForceL.destroy()
+        }
+      }
+      else if (graph_name=="TR"){
+        if (!(this.checkedCharts.includes(graph_name))){
+          console.log("Creating")
+          setTimeout(() => {
+              this.createChartTactileR()
+          }, 50)
+        }
+        else{
+          console.log("Destroying")
+          this.chartTactileR.destroy()
+        }
+      }
+      else if (graph_name=="TL"){
+        if (!(this.checkedCharts.includes(graph_name))){
+          console.log("Creating")
+          setTimeout(() => {
+              this.createChartTactileL()
+          }, 50)
+        }
+        else{
+          console.log("Destroying")
+          this.chartTactileL.destroy()
         }
       }
     },
@@ -228,50 +297,6 @@ export default {
 
       this.chartForceR;
     },
-      // const ctxM = document.getElementById('myChartMultiple');
-      // const labelsM = ['Jan','Feb','Mar','Apr','May','Jun','Jul'];
-      // var data_chartM = {
-      //   labels: labelsM,
-      //   datasets: [{
-      //     label: 'Fx',
-      //     data: [65, 59, 80, 81, 56, 55, 40],
-      //     fill: false,
-      //     borderColor: 'rgb(75, 192, 192)',
-      //     tension: 0.1
-      //   },
-      //   {
-      //     label: 'Fy',
-      //     data: [34, 43, 10, 50, 81, 75, 20],
-      //     fill: false,
-      //     borderColor: 'rgb(192, 75, 192)',
-      //     tension: 0.1
-      //   }]
-      // };
-
-      // const chartObjM = new Chart(ctxM, {
-      //   type:'line',
-      //   data: data_chartM,
-      //   options: {
-      //     scales: {
-      //       y: {
-      //           max: 100,
-      //           min: 0,
-      //           ticks:{
-      //             maxTicksLimit: 6,
-      //           }
-      //       }
-      //     },
-      //   },
-      // });
-      
-      // chartObjM.options.transitions.active.animation.duration = 0;
-      // chartObjM.options.animation = false;
-
-      // //Object.seal(chartObj);
-      // this.myChartMultiple = markRaw(chartObjM)
-
-      // this.myChartMultiple;
-    //},
 
     createChartForceL(){
       const ctx = document.getElementById('chartForceL');
@@ -336,6 +361,168 @@ export default {
       this.chartForceL;
     },
 
+    createChartTactileL(){
+      const ctx = document.getElementById('chartTactileL');
+      var labels = [];
+      var y_values = [];
+      for (let i = 0; i < 61; i++) {  
+        labels.push(i)
+        y_values.push(0)
+      }
+      var data_chrt = {
+        labels: labels,
+        datasets: [{label: 'x', data: y_values, fill: false, borderColor: 'rgb(192, 75, 75)', tension: 0.2}]
+      };
+
+      const chartObjTactileL = new Chart(ctx, {
+        type:'line',
+        data: data_chrt,
+        options: {
+          plugins:{
+              legend: {
+                display: false
+              },
+              title: {
+                display: true,
+                text: 'Left tactile sensor',
+                color: '#000',
+                font: {
+                        size: 20,
+                    },
+              }
+         },
+          elements: {
+                    point:{
+                        radius: 0
+                    }
+                },
+          scales: {
+            y: {
+                max: 6,
+                min: 0,
+                display: true,
+                border:{
+                  display: true
+                },
+                grid:{
+                  display: true,
+                  drawOnChartArea: true,
+                  drawTicks: false,
+                },
+                ticks:{
+                  display: false,
+                }
+            },
+            x: {
+              max: 6,
+              min: 0,
+              display: true,
+              border:{
+                display: true
+              },
+              grid:{
+                display: true,
+                drawOnChartArea: true,
+                drawTicks: false,
+              },
+              ticks:{
+                display: false,
+              }
+            }
+          },
+        },
+      });
+      
+      chartObjTactileL.options.transitions.active.animation.duration = 0;
+      chartObjTactileL.options.animation = false;
+      chartObjTactileL.options.maintainAspectRatio = false;
+
+      this.chartTactileL = markRaw(chartObjTactileL)
+
+      this.chartTactileL;
+    },
+
+    createChartTactileR(){
+      const ctx = document.getElementById('chartTactileR');
+      var labels = [];
+      var y_values = [];
+      for (let i = 0; i < 61; i++) {  
+        labels.push(i)
+        y_values.push(0)
+      }
+      var data_chrt = {
+        labels: labels,
+        datasets: [{label: 'x', data: y_values, fill: false, borderColor: 'rgb(192, 75, 75)', tension: 0.2}]
+      };
+
+      const chartObjTactileR = new Chart(ctx, {
+        type:'line',
+        data: data_chrt,
+        options: {
+          plugins:{
+              legend: {
+                display: false
+              },
+              title: {
+                display: true,
+                text: 'Right tactile sensor',
+                color: '#000',
+                font: {
+                        size: 20,
+                    },
+              }
+         },
+          elements: {
+                    point:{
+                        radius: 0
+                    }
+                },
+          scales: {
+            y: {
+                max: 6,
+                min: 0,
+                display: true,
+                border:{
+                  display: true
+                },
+                grid:{
+                  display: true,
+                  drawOnChartArea: true,
+                  drawTicks: false,
+                },
+                ticks:{
+                  display: false,
+                }
+            },
+            x: {
+              max: 6,
+              min: 0,
+              display: true,
+              border:{
+                display: true
+              },
+              grid:{
+                display: true,
+                drawOnChartArea: true,
+                drawTicks: false,
+              },
+              ticks:{
+                display: false,
+              }
+            }
+          },
+        },
+      });
+      
+      chartObjTactileR.options.transitions.active.animation.duration = 0;
+      chartObjTactileR.options.animation = false;
+      chartObjTactileR.options.maintainAspectRatio = false;
+
+      this.chartTactileR = markRaw(chartObjTactileR)
+
+      this.chartTactileR;
+    },
+
     chart_chart(){
       var values = this.chartForceR.data.datasets[0].data.slice(1);
       values.push(Math.floor(Math.random()*100))
@@ -353,6 +540,8 @@ export default {
     createCharts(){
       this.createChartForceR()
       this.createChartForceL()
+      this.createChartTactileR()
+      this.createChartTactileL()
     },
     
   },
@@ -402,6 +591,12 @@ export default {
   width: 500px;
   margin: 30px;
 }
+.canvas_container_square{
+  height: 400px;
+  width: 400px;
+  margin: 62px;
+  position: relative;
+}
 .inline_items *{
   display: inline-block;
 }
@@ -415,6 +610,8 @@ ul {
   margin:auto;
   width: 300px;
   min-width: fit-content;
+  padding-left: 20px;
+  padding-right: 10px;
   align-items: center;
   text-align: center;
   background-color: #49485e;

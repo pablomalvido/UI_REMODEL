@@ -1,64 +1,46 @@
 <template>
   <div>
-    <TitlePage page='Teaching'/>
+    <TitlePage page='CAD Platform'/>
   </div>
 
   <div class="content">
-
     <div class="container">
-    <div class="left_content">
-    <div class="Record">
-      
-      <h3>Record trajectory</h3>
-      <div class="Selection">
-        <label>Robot: </label>
-        <select v-model="group_selected">
-          <!-- <option disabled value="">Please Select</option> -->
-          <option v-for="(robot, index) in robot_groups" :key="index" :value="robot">{{robot}}</option>
-        </select>
-        <label>End effector: </label>
-        <select v-model="tool_selected">
-          <!-- <option disabled value="">Please Select</option> -->
-          <option v-for="(tool, index) in robot_tools" :key="index" :value="index">{{tool}}</option>
-        </select>
-      </div>
 
-      <div class="Record_buttons">
-        <button :disabled="modeProp=='Running'" @click="record_traj_function('pose')">Record pose</button>
-        <button :disabled="modeProp=='Running'" v-if="tool_selected==0" @click="record_traj_function('gripper_move')">Move gripper</button>
-        <button :disabled="modeProp=='Running'" v-if="tool_selected==0" @click="record_traj_function('gripper_grasp')">Grasp</button>
-        <button :disabled="modeProp=='Running'" v-if="tool_selected==1" @click="record_traj_function('tape')">Tape</button>
-      </div>
+        <div class="left_content">
+            <div class="Selection">
+                <p>Select USB: </p>
+                <select v-model="usb_selected" :onchange="update_files_usb()">
+                    <option disabled value="">Please Select</option>
+                    <option v-for="(usb, index) in usb_list" :key="index" :value="usb">{{usb}}</option>
+                </select>
+            </div>
+            <div class="Selection">
+                <p>File to upload: </p>
+                <select v-model="usb_file_selected" :onchange="filter_extension()">
+                    <option disabled value="">Please Select</option>
+                    <option v-for="(file, index) in usb_files" :key="index" :value="file">{{file}}</option>
+                </select>
+            </div>
+            <div class="Selection">
+                <p>File to replace: </p>
+                <select v-model="CAD_file_selected">
+                    <option disabled value="">Please Select</option>
+                    <option v-for="(file, index) in CAD_files_filtered" :key="index" :value="file">{{file}}</option>
+                </select>
+            </div>
+            <button :disabled="modeProp=='Running' || usb_selected=='' || usb_file_selected=='' || CAD_file_selected==''" @click="replace_file()">Upload</button>
+        </div>
 
-      <div class="Record_save">
-        <label>Trajectory name:</label>
-        <input type="text" v-model="traj_name">
-        <button :disabled="poses_count==0 || traj_name=='' || modeProp=='Running'" @click="record_traj_function('save')">Save</button>
-      </div>
-    </div>
-
-    <div class="Execute">
-      <h3>Execute trajectory</h3>
-        <label>Trajectory: </label>
-        <select v-model="traj_selected">
-          <option disabled value="">Please Select</option>
-          <option v-for="(traj, index) in trajectory_list" :key="index" :value="traj">{{traj}}</option>
-        </select>
-        <button :disabled="modeProp=='Running' || traj_selected==''" @click="exec_traj_func()">Execute</button>
-        <button :disabled="modeProp=='Running' || traj_selected==''" @click="del_traj_func()">Delete</button>
-    </div>
-    </div>
-
-    <div class="right_content">
-      <div class="logs">
-        <h3>Logs</h3>
-      <div class="messages">
-      <ul v-for="(message_log, key) in logs" :key="key">
-        <il>{{message_log}}</il>
-      </ul>
-      </div>
-      </div>
-    </div>
+        <div class="right_content">
+            <div class="logs">
+                <h3>Logs</h3>
+                <div class="messages">
+                    <ul v-for="(message_log, key) in logs" :key="key">
+                        <il>{{message_log}}</il>
+                    </ul>
+                </div>
+            </div>
+        </div>
     </div>
   </div>
 </template>
@@ -68,7 +50,7 @@ import ROSLIB from "roslib";
 import TitlePage from '@/components/Title_page.vue';
 
 export default {
-  name: 'Teaching',
+  name: 'CadPlatform',
 
   components: {TitlePage},
 
@@ -77,21 +59,17 @@ export default {
       rosCon: false,
       modeProp: 'Idle',
       menuOpen: true,
-      get_mode_service: null,
-      traj_record_service: null,
-      get_trajs_service: null,
-      exec_traj_service: null,
-      del_traj_service: null,
-      topic_mode: null,
-      robot_groups: ['R1', 'R2'],
-      robot_tools: {0:'Gripper', 1:'Taping gun'},
-      group_selected: 'R1',
-      tool_selected: 0,
-      traj_name: '',
-      trajectory_list: [],
-      traj_selected: '',
-      poses_count: 0,
-      robot_moving: false,
+      get_usbs_service: null,
+      get_usb_files_service: null,
+      move_file_service: null,
+      usb_selected: '',
+      prev_usb_selected: '',
+      usb_list: [],
+      usb_file_selected: '',
+      usb_files: [],
+      CAD_file_selected: '',
+      CAD_files: ['platform_cad.x3d', 'platform_ids.wri', 'combs_cad.x3d', 'combs_ids.wri', 'ATC_cad.x3d', 'ATC_ids.wri', 'Jigs_definition_v2.xml', 'Components_definition.csv', 'WH_configuration.xml', 'Assembly_sequence.csv', 'stl/platform'],      
+      CAD_files_filtered: [],
       logs: [], //['Logs console...'],
     }
   },
@@ -120,25 +98,20 @@ export default {
           name : '/UI/get_mode',
           serviceType : 'std_srvs/Trigger'
       });
-      this.get_trajs_service = new ROSLIB.Service({
+      this.get_usbs_service = new ROSLIB.Service({
           ros : this.ros,
-          name : '/get_trajectories',
-          serviceType : 'UI_nodes_pkg/GetTraj'
+          name : '/UI/get_usbs',
+          serviceType : 'UI_nodes_pkg/GetList'
       });
-      this.traj_record_service = new ROSLIB.Service({
+      this.get_usb_files_service = new ROSLIB.Service({
           ros : this.ros,
-          name : '/trajectory_record',
-          serviceType : 'UI_nodes_pkg/RecordTraj'
+          name : '/UI/get_files_usb',
+          serviceType : 'UI_nodes_pkg/GetFiles'
       });    
-      this.exec_traj_service = new ROSLIB.Service({
+      this.move_file_service = new ROSLIB.Service({
           ros : this.ros,
-          name : '/execute_trajectory',
-          serviceType : 'UI_nodes_pkg/ExecTraj'
-      });
-      this.del_traj_service = new ROSLIB.Service({
-          ros : this.ros,
-          name : '/delete_trajectory',
-          serviceType : 'UI_nodes_pkg/ExecTraj'
+          name : 'UI/copy_file',
+          serviceType : 'UI_nodes_pkg/MoveFile'
       });
     },
 
@@ -244,6 +217,84 @@ export default {
       });
     },
 
+    get_usb_info(){
+        var request = new ROSLIB.ServiceRequest({});  
+        this.get_usbs_service.callService(request, (result) => {
+            if(result.success){
+                var new_usb_list = []
+                for (const [key, usb_name] of Object.entries(result.data)){
+                    new_usb_list.push(usb_name)
+                }
+                if (!(this.usb_list.join() == new_usb_list.join())){
+                    this.usb_list = new_usb_list
+                }
+                if (!(this.usb_list.includes(this.usb_selected))){
+                    this.usb_selected = ''
+                    this.usb_file_selected = ''
+                    this.CAD_file_selected = ''
+                }
+                if (this.usb_list.length==0){
+                    this.usb_files = []
+                }
+            }
+            setTimeout(() => {
+                  this.get_usb_info()
+            }, 1000)
+        });
+    },
+
+    update_files_usb(){
+        if (this.usb_selected != this.prev_usb_selected){
+            this.prev_usb_selected = this.usb_selected
+            if(this.usb_selected != ''){
+                var request = new ROSLIB.ServiceRequest({
+                    data: this.usb_selected
+                });  
+                this.get_usb_files_service.callService(request, (result) => {
+                    if(result.success){
+                        this.usb_files = []
+                        for (const [key, usb_name] of Object.entries(result.data)){
+                            this.usb_files.push(usb_name)
+                        }
+                        if (!(this.usb_files.includes(this.usb_file_selected))){
+                            this.usb_file_selected = ''
+                        }
+                    }
+                });
+            }
+        }
+    },
+
+    replace_file(){
+        var request = new ROSLIB.ServiceRequest({
+            source: this.usb_selected+"/"+this.usb_file_selected,
+            destination: this.CAD_file_selected,
+        });  
+        this.move_file_service.callService(request, (result) => {
+            if(result.success){
+                this.add_logs(this.CAD_file_selected + " was overwritten successfully")
+            }
+            else{
+                this.add_logs("Error overwritting " + this.CAD_file_selected)
+            }
+        });    
+    },
+
+    filter_extension(){
+      this.CAD_files_filtered = []
+      if (this.usb_file_selected != ''){
+        const selected_extension = this.usb_file_selected.split('.')[1]
+        for (const [key, file_name] of Object.entries(this.CAD_files)){
+          if(file_name.split('.')[1] == selected_extension){
+            this.CAD_files_filtered.push(file_name)
+          }
+        }
+        if (this.CAD_file_selected.split('.')[1] != selected_extension){
+          this.CAD_file_selected = ''
+        }
+      }
+    },
+
     add_logs(msg){
       var time_now= new Date().toLocaleTimeString();
       time_now=time_now.slice(0,-3);
@@ -264,7 +315,7 @@ export default {
       this.init_subscribers()
       this.init_services()
       this.check_mode()
-      this.updateTrajs()
+      this.get_usb_info()
     })
 
     this.ros.on('error', (error) => {
@@ -320,7 +371,7 @@ select{
   border: 1px solid #1d1b31;
   border-radius: 5px;
 }
-.Record{
+.left_content{
   background-color: #49485e;
   width: fit-content;
   border-radius: 15px;
@@ -346,49 +397,30 @@ button{
   padding-bottom: 10px;
 }
 .Selection{
-  margin-top: 8px;
+  margin-top: 20px;
 }
-.Record_buttons{
-  margin-top: 15px;
+.Selection *{
+    display: inline-block;
 }
-.Record_save{
-  margin-top: 10px;
-  margin-bottom: 10px;
-}
-.Execute{
-  margin-top: 60px;
-  margin-bottom: 10px;
-}
-.Record_buttons button{
-  width: 110px;
-  height: 30px;
-  margin: 5px;
-}
-.Record_save button{
-  width: 50px;
-  height: 30px;
-  margin: 5px;
-}
-.Execute button{
+button{
   width: 80px;
-  height: 30px;
+  height: 40px;
   margin: 5px;
-}
-input{
-  height: 30px;
-  width: 150px;
-  margin-left: 5px;
-  margin-right: 10px;
-  text-align: left;
-  border: 1px solid #1d1b31;
-  border-radius: 3px;
-  padding-left: 2px; 
+  margin-top: 30px;
+  font-size: 14px;
 }
 select{
   height: 30px;
+  min-width: 230px;
   width: fit-content;
   padding: 2px 5px 2px 5px;
   margin: 0px 10px 0px 3px;
+}
+.Selection p{
+  width: fit-content; 
+  min-width: 130px;
+  text-align: right;
+  margin-right: 5px;
 }
 .logs{
   background: #1d1b31;
