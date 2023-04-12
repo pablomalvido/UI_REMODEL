@@ -142,81 +142,6 @@ export default {
       });
     },
 
-    updateTrajs(){
-      var request = new ROSLIB.ServiceRequest({});  
-      this.get_trajs_service.callService(request, (result) => {
-        this.trajectory_list = []
-        if(result.success){
-          for (const [key, traj_name] of Object.entries(result.data)){
-            this.trajectory_list.push(traj_name)
-          }
-        }
-      });
-    },
-
-    record_traj_function(opt){
-      var request = new ROSLIB.ServiceRequest({
-        robotNumber: this.group_selected,
-        recordPose: false,
-        moveGripper: false,
-        closeGripper: false,
-        tape: false,
-        saveTraj: false,
-        fileName: this.group_selected + '_' + this.traj_name,
-      });  
-      if(opt=='pose'){
-        request.recordPose = true;
-      }
-      else if(opt=='gripper_move'){
-        request.moveGripper = true;
-      }
-      else if(opt=='gripper_grasp'){
-        request.closeGripper = true;
-      }
-      else if(opt=='tape'){
-        request.tape = true;
-      }
-      else if(opt=='save'){
-        request.saveTraj = true;
-      }
-      this.traj_record_service.callService(request, (result) => {
-        this.add_logs(result.result)
-        if(result.success){
-          if(opt=='save'){
-            this.poses_count = 0;
-            this.traj_name = '';
-            this.updateTrajs();
-          }
-          else{
-            this.poses_count += 1;
-          }
-        }
-      });
-    },
-
-    exec_traj_func(){
-      this.add_logs("Executing trajectory: " + this.traj_selected + "...")
-      this.publish_string_constant('/UI/mode','Running')
-      var request = new ROSLIB.ServiceRequest({
-        data: this.traj_selected,
-      });  
-      this.exec_traj_service.callService(request, (result) => {
-        this.add_logs(result.result)
-        this.publish_string_constant('/UI/mode','Idle')
-      });
-    },
-
-    del_traj_func(){
-      this.add_logs("Deleting trajectory: " + this.traj_selected + "...")
-      var request = new ROSLIB.ServiceRequest({
-        data: this.traj_selected,
-      });  
-      this.del_traj_service.callService(request, (result) => {
-        this.add_logs(result.result)
-        this.traj_selected = ''
-      });
-    },
-
     get_usb_info(){
         var request = new ROSLIB.ServiceRequest({});  
         this.get_usbs_service.callService(request, (result) => {
@@ -378,15 +303,6 @@ select{
   border: 2px solid #1d1b31;
   color:white;
   padding: 0px 15px 10px 15px;
-}
-.Execute{
-  background: #716f8c;
-  width: fit-content;
-  border-radius: 15px;
-  border: 2px solid #1d1b31;
-  color:white;
-  padding: 5px 15px 15px 15px;
-  margin: auto;
 }
 button{
   border: 1px solid #1d1b31;
