@@ -45,7 +45,7 @@
           style="overflow: visible;"
         >
           <li
-            v-if="isSearch"
+            v-if="isSearch && (profileRole == 'Administrator' || profileRole == 'Operator')"
             @click="isOpened = true"
           >
             <i class="bx bx-search" />
@@ -61,7 +61,7 @@
             v-for="(menuItem, index) in menuItems"
             :key="index"
           >
-            <li>
+            <li v-if="menuItem.roles.includes(profileRole)">
               <!-- <router-link :to="'/' + menuItem.page"> -->
               <router-link :to="{name: menuItem.page, params: {'role': profileRole}}">
               <a :href="menuItem.link">
@@ -186,6 +186,7 @@
             name: 'Home',
             tooltip: 'Home',
             icon: 'bx-home',
+            roles: ['Administrator', 'Operator'],
           },
           {
             link: '#',
@@ -193,6 +194,7 @@
             name: 'Sensors',
             tooltip: 'Sensors',
             icon: 'bx-chip',
+            roles: ['Administrator'],
           },
           {
             link: '#',
@@ -200,6 +202,7 @@
             name: 'Alarms',
             tooltip: 'Alarms',
             icon: 'bx-error',
+            roles: ['Administrator', 'Operator'],
           },
           {
             link: '#',
@@ -207,13 +210,15 @@
             page: 'config',
             tooltip: 'Configuration',
             icon: 'bx-cog',
+            roles: ['Administrator'],
           },
           {
             link: '#',
             name: 'CAD Platform',
-            page: 'home',
+            page: 'cad_platform',
             tooltip: 'CAD_platform',
             icon: 'bx-data',
+            roles: ['Administrator'],
           },
           {
             link: '#',
@@ -221,6 +226,7 @@
             page: 'teaching',
             tooltip: 'Teaching',
             icon: 'bx-video-recording',
+            roles: ['Administrator'],
           },
           {
             link: '#',
@@ -228,6 +234,7 @@
             page: 'launch',
             tooltip: 'Launchers',
             icon: 'bx-rocket',
+            roles: ['Administrator', 'Operator'],
           },
           {
             link: '#',
@@ -235,6 +242,7 @@
             page: 'contact',
             tooltip: 'Contact',
             icon: 'bxs-contact',
+            roles: ['Administrator', 'Operator'],
           },
         ],
       },

@@ -11,7 +11,7 @@
         <button>Enable</button>
         <button>Disable</button>
       </div>
-      <div class="radiobuttons">
+      <div class="radiobuttons" v-if="role_user=='Administrator'">
         <input type="radio" v-model="control_opt" value="0">Process control
         <input type="radio" v-model="control_opt" value="1">Manual control
       </div>
@@ -208,6 +208,7 @@ export default {
       rosCon: false,
       modeProp: 'Idle',
       menuOpen: true,
+      role_user: this.$route.params.role,
       get_arms_pose_service: null,
       get_moveit_groups_service: null,
       move_group_service: null,

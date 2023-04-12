@@ -45,6 +45,7 @@
           <option v-for="(traj, index) in trajectory_list" :key="index" :value="traj">{{traj}}</option>
         </select>
         <button :disabled="modeProp=='Running' || traj_selected==''" @click="exec_traj_func()">Execute</button>
+        <button :disabled="modeProp=='Running' || traj_selected==''" @click="del_traj_func()">Delete</button>
     </div>
     </div>
 
@@ -80,6 +81,7 @@ export default {
       traj_record_service: null,
       get_trajs_service: null,
       exec_traj_service: null,
+      del_traj_service: null,
       topic_mode: null,
       robot_groups: ['R1', 'R2'],
       robot_tools: {0:'Gripper', 1:'Taping gun'},
@@ -131,6 +133,11 @@ export default {
       this.exec_traj_service = new ROSLIB.Service({
           ros : this.ros,
           name : '/execute_trajectory',
+          serviceType : 'UI_nodes_pkg/ExecTraj'
+      });
+      this.del_traj_service = new ROSLIB.Service({
+          ros : this.ros,
+          name : '/delete_trajectory',
           serviceType : 'UI_nodes_pkg/ExecTraj'
       });
     },
@@ -223,6 +230,17 @@ export default {
       this.exec_traj_service.callService(request, (result) => {
         this.add_logs(result.result)
         this.publish_string_constant('/UI/mode','Idle')
+      });
+    },
+
+    del_traj_func(){
+      this.add_logs("Deleting trajectory: " + this.traj_selected + "...")
+      var request = new ROSLIB.ServiceRequest({
+        data: this.traj_selected,
+      });  
+      this.del_traj_service.callService(request, (result) => {
+        this.add_logs(result.result)
+        this.traj_selected = ''
       });
     },
 

@@ -6,7 +6,7 @@
     <div class="content">
         <div class= "launchers">
             <ul v-for="(launcher, key) in launchers" :key="key">
-                <li class="launcherID" :class="launcher.name">
+                <li class="launcherID" :class="launcher.name" v-if="launcher.roles.includes(role_user)">
                     <p>{{launcher.name}}</p>
                     <button @click="launch_start(key)" :disabled="launcher.active!='gray' || global_launching">Launch</button>
                     <button @click="launch_stop(key)" :disabled="(launcher.active!='green' && launcher.active!='red') || global_launching">Stop</button>
@@ -32,17 +32,19 @@ export default {
       rosCon: false,
       modeProp: '',
       menuOpen: true,
+      role_user: this.$route.params.role,
       launchers: {
-        1: {name: 'Robot demo', launch_files:[{pkg: 'motoman/motoman_sda10f_moveit_config', file: 'demo_no_gripper_camera'}], active: 'gray', nodes:['/joint_state_publisher','/move_group','/robot_state_publisher']},
-        2: {name: 'CAD Platform', launch_files:[{pkg: 'elvez_pkg', file: 'launcher'}], active: 'gray', nodes:['/ATC_rf','/UC2_handler','/combs_rf','/platform_rf']}, 
-        3: {name: 'Process control', launch_files:[{pkg: 'UI_nodes_pkg', file: 'process'}], active: 'gray', nodes:['/elvez_process_action_server','/process_action_client','/process_feedback']},
-        4: {name: 'Manual control', launch_files:[{pkg: 'UI_nodes_pkg', file: 'moveit_manual'}], active: 'gray', nodes:['/moveit_manual']},
-        5: {name: 'Configuration', launch_files:[{pkg: 'UI_nodes_pkg', file: 'config'}], active: 'gray', nodes:['/config_node']},        
-        6: {name: 'Fake sensors', launch_files:[{pkg: 'UI_nodes_pkg', file: 'fake_sensors'}], active: 'gray', nodes:['/fake_sensors']},
-        7: {name: 'Record traj', launch_files:[{pkg: 'UI_nodes_pkg', file: 'record_traj'}], active: 'gray', nodes:['/record_traj']},
-        // 8: {name: 'Safety manager', launch_files:[{pkg: 'remodel_safety_manager', file: 'RSM'}], active: 'gray', nodes:['/RSM_PLC_connection']},                
-        // 9: {name: 'Test', launch_files:[{pkg: 'test_pkg', file: 'print_loop'}], active: 'gray', nodes:['/print_loop_node','/print_loop_node_infinite']},
-        99: {name: 'All', launch_files:[], active: 'gray', nodes:['']},
+        1: {name: 'Robot demo', launch_files:[{pkg: 'motoman/motoman_sda10f_moveit_config', file: 'demo_no_gripper_camera'}], active: 'gray', nodes:['/joint_state_publisher','/move_group','/robot_state_publisher'], roles:['Administrator', 'Operator']},
+        2: {name: 'CAD Platform', launch_files:[{pkg: 'elvez_pkg', file: 'launcher'}], active: 'gray', nodes:['/ATC_rf','/UC2_handler','/combs_rf','/platform_rf'], roles:['Administrator', 'Operator']}, 
+        3: {name: 'Process control', launch_files:[{pkg: 'UI_nodes_pkg', file: 'process'}], active: 'gray', nodes:['/elvez_process_action_server','/process_action_client','/process_feedback'], roles:['Administrator', 'Operator']},
+        4: {name: 'Manual control', launch_files:[{pkg: 'UI_nodes_pkg', file: 'moveit_manual'}], active: 'gray', nodes:['/moveit_manual'], roles:['Administrator']},
+        5: {name: 'Configuration', launch_files:[{pkg: 'UI_nodes_pkg', file: 'config'}], active: 'gray', nodes:['/config_node'], roles:['Administrator']},        
+        6: {name: 'Fake sensors', launch_files:[{pkg: 'UI_nodes_pkg', file: 'fake_sensors'}], active: 'gray', nodes:['/fake_sensors'], roles:['Administrator']},
+        7: {name: 'Record trajectory', launch_files:[{pkg: 'UI_nodes_pkg', file: 'record_traj'}], active: 'gray', nodes:['/record_traj'], roles:['Administrator']},
+        8: {name: 'Safety manager', launch_files:[{pkg: 'remodel_safety_manager', file: 'RSM'}], active: 'gray', nodes:['/RSM_PLC_connection'], roles:['Administrator', 'Operator']},
+        9: {name: 'CAD files update', launch_files:[{pkg: 'elvez_pkg', file: 'update_files'}], active: 'gray', nodes:['/CAD_loader'], roles:['Administrator']},                
+        // 10: {name: 'Test', launch_files:[{pkg: 'test_pkg', file: 'print_loop'}], active: 'gray', nodes:['/print_loop_node','/print_loop_node_infinite']},
+        99: {name: 'All', launch_files:[], active: 'gray', nodes:[''], roles:['Administrator', 'Operator']},
       },
       global_launching: false,
       launch_service: null,
@@ -102,7 +104,7 @@ export default {
       this.launch_files_temp = []
       this.nodes_temp = []
       for (const [key, value] of Object.entries(this.launchers)) {
-        if (key!=99){
+        if (key!=99 && value.roles.includes(this.role_user)){
           for (let i = 0; i < value.launch_files.length; i++) {
             this.launch_files_temp.push({pkg: value.launch_files[i].pkg, file:value.launch_files[i].file})
           }
@@ -111,11 +113,13 @@ export default {
       }
       this.launchers[99].launch_files = this.launch_files_temp
       this.launchers[99].nodes = this.nodes_temp
+      // console.log(this.launchers[99].launch_files)
+      // console.log(this.launchers[99].nodes)
     },
 
     launch_start(launcher_id){
       this.global_launching = true
-      console.log(this.launchers[launcher_id])
+      // console.log(this.launchers[launcher_id])
       this.service_data = []
       for (let i = 0; i < this.launchers[launcher_id].launch_files.length; i++) {
         var launch_file_i = new ROSLIB.Message({
@@ -128,9 +132,9 @@ export default {
           data : this.service_data
       });
   
+      this.launchers[launcher_id].active = 'orange'
       this.launch_service.callService(request, (result) => {
           console.log('Result for service call on ' + this.launch_service.name + ': ' + result.success);
-          this.launchers[launcher_id].active = 'orange'
       });
       
       this.check_started(launcher_id)
@@ -159,8 +163,8 @@ export default {
           this.ros.getNodes((nodes) => {
               var killed = true;
               for (let i = 0; i < this.launchers[launcher_id].nodes.length; i++) {
-                  console.log(this.launchers[launcher_id].nodes[i])
-                  console.log(nodes)
+                  // console.log(this.launchers[launcher_id].nodes[i])
+                  // console.log(nodes)
                   if (nodes.includes(this.launchers[launcher_id].nodes[i])){
                       killed = false;
                       break; 
@@ -181,8 +185,8 @@ export default {
         this.ros.getNodes((nodes) => {
             var started = true;
             for (let i = 0; i < this.launchers[launcher_id].nodes.length; i++) {
-                console.log(this.launchers[launcher_id].nodes[i])
-                console.log(nodes)
+                // console.log(this.launchers[launcher_id].nodes[i])
+                // console.log(nodes)
                 if (!nodes.includes(this.launchers[launcher_id].nodes[i])){
                     started = false;
                     console.log("Nodes not started yet")
@@ -205,11 +209,11 @@ export default {
 
     getLaunchersState(){
       this.ros.getNodes((nodes) => {
-          console.log(nodes)
+          // console.log(nodes)
           for (const [key, value] of Object.entries(this.launchers)) {
             if (value.active != 'orange'){
-              console.log(key)
-              console.log(value)
+              // console.log(key)
+              // console.log(value)
               var active_num = 0;
               for (let i = 0; i < value.nodes.length; i++) {
                 if (nodes.includes(value.nodes[i])){
