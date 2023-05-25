@@ -68,7 +68,8 @@ export default {
       usb_file_selected: '',
       usb_files: [],
       CAD_file_selected: '',
-      CAD_files: ['platform_cad.x3d', 'platform_ids.wri', 'combs_cad.x3d', 'combs_ids.wri', 'ATC_cad.x3d', 'ATC_ids.wri', 'Jigs_definition_v2.xml', 'Components_definition.csv', 'WH_configuration.xml', 'Assembly_sequence.csv', 'stl/platform'],      
+      //CAD_files: ['platform_cad.x3d', 'platform_ids.wri', 'combs_cad.x3d', 'combs_ids.wri', 'ATC_cad.x3d', 'ATC_ids.wri', 'Jigs_definition_v2.xml', 'Components_definition.csv', 'WH_configuration.xml', 'Assembly_sequence.csv', 'stl/platform'],      
+      CAD_files: ['example.yaml'],
       CAD_files_filtered: [],
       logs: [], //['Logs console...'],
     }

@@ -44,7 +44,7 @@ export default {
         8: {name: 'Fake sensors', launch_files:[{pkg: 'UI_nodes_pkg', file: 'fake_sensors'}], active: 'gray', nodes:['/fake_sensors'], roles:['Administrator']},
         9: {name: 'Record trajectory', launch_files:[{pkg: 'UI_nodes_pkg', file: 'record_traj'}], active: 'gray', nodes:['/record_traj'], roles:['Administrator']},
         10: {name: 'Safety manager', launch_files:[{pkg: 'remodel_safety_manager', file: 'RSM'}], active: 'gray', nodes:['/RSM_PLC_connection'], roles:['Administrator', 'Operator']},
-        11: {name: 'CAD files update', launch_files:[{pkg: 'elvez_pkg', file: 'update_files'}], active: 'gray', nodes:['/CAD_loader'], roles:['Administrator']},                
+        11: {name: 'CAD files update', launch_files:[{pkg: 'UI_nodes_pkg', file: 'update_files'}], active: 'gray', nodes:['/CAD_loader'], roles:['Administrator']},                
         // 10: {name: 'Test', launch_files:[{pkg: 'test_pkg', file: 'print_loop'}], active: 'gray', nodes:['/print_loop_node','/print_loop_node_infinite']},
         99: {name: 'All', launch_files:[], active: 'gray', nodes:[''], roles:['Administrator', 'Operator']},
       },
