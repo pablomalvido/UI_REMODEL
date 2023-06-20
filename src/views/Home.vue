@@ -6,10 +6,13 @@
   <div class="content">
     <div class="robot_control">
       <h3>Robot Control</h3>
-      <div class="enable">
+      <h4 v-if="real_robot_con">Robot connected</h4>
+      <h4 v-else-if="demo_robot_con">Robot demo connected</h4>
+      <h4 v-else>Robot not connected</h4>
+      <div class="enable" v-if="real_robot_con">
         <label> Robot motion: </label>
-        <button>Enable</button>
-        <button>Disable</button>
+        <button :disabled="robot_enable_status" @click="robot_enable()">Enable</button>
+        <button :disabled="!robot_enable_status" @click="robot_disable()">Disable</button>
       </div>
       <div class="radiobuttons" v-if="role_user=='Administrator'">
         <input type="radio" v-model="control_opt" value="0">Process control
@@ -110,6 +113,13 @@
         </div>
       </div>
 
+      <div class="speed_limits">
+        <label> Speed limit: </label>
+        <input type="text" v-model="speed_limit" :onchange="check_speed_limit()">
+        <label> Acceleration limit: </label>
+        <input type="text" v-model="accel_limit" :onchange="check_accel_limit()">
+      </div>
+
       <div class="EEF_bkg">
       <div class="EEF">
         <h3>Actuate end effector</h3>
@@ -118,11 +128,11 @@
           <label class="EEF_side"><b>{{arm}}:</b></label>
           <div v-if="value.includes('gripper')">
             <label> gripper</label>
-            <input type="text" v-model="tools[value]['distance']">
+            <input type="text" v-model="tools[value]['distance']" :onchange="check_gripper_limit(value, 0)">
             <label class="unit">mm</label>
-            <button class="small_button">Move</button>
-            <button class="small_button">Open</button>
-            <button class="small_button">Close</button>
+            <button class="small_button" @click="check_gripper_limit(value, gripper_grasp_dist); move_gripper(arm, tools[value]['distance'], 'move')">Move</button>
+            <button class="small_button" @click="move_gripper(arm, gripper_open_dist, 'move')">Open</button>
+            <button class="small_button" @click="move_gripper(arm, gripper_grasp_dist, 'grasp')">Grasp</button>
           </div>
           <div v-else-if="value.includes('taping_gun')">
             <label> taping gun</label>
@@ -208,16 +218,22 @@ export default {
       rosCon: false,
       modeProp: 'Idle',
       menuOpen: true,
+      real_robot_con: false,
+      demo_robot_con: false,
+      robot_enable_status: false,
       role_user: this.$route.params.role,
       get_arms_pose_service: null,
       get_moveit_groups_service: null,
       move_group_service: null,
       get_all_operations_service: null,
       get_mode_service: null,
+      robot_enable_service: null,
+      robot_disable_service: null,
       index_topic: null,
       topic_mode: null,
       topic_logs: null,
       topic_feedback: null,
+      topic_robot_status: null,
       rviz_image_topics: [],
       // rviz_image1_topic: null,
       // rviz_image2_topic: null,
@@ -244,6 +260,12 @@ export default {
       control_opt: 0,
       manual_opt: 0,
       robot_moving: false,
+      speed_limit: "0.1",
+      accel_limit: "0.1",
+      speed_limit_max: 0.2,
+      accel_limit_max: 0.2,
+      gripper_grasp_dist: 20,
+      gripper_open_dist: 105,
       cartesian_position_rel_right: {'X': 0, 'Y': 0, 'Z': 0, 'Rx': 0, 'Ry': 0, 'Rz': 0},
       cartesian_position_rel_left: {'X': 0, 'Y': 0, 'Z': 0, 'Rx': 0, 'Ry': 0, 'Rz': 0},
       cartesian_position_abs_right: {'X': 0, 'Y': 0, 'Z': 0, 'Rx': 0, 'Ry': 0, 'Rz': 0},
@@ -357,6 +379,15 @@ export default {
           }
         }
       });
+
+      this.topic_robot_status = new ROSLIB.Topic({
+        ros : this.ros,
+        name : '/robot_status',
+        messageType : 'industrial_msgs/RobotStatus'
+      });
+      this.topic_robot_status.subscribe((message) => {
+        this.robot_enable_status = message.motion_possible.val==1;
+      });
     },
 
     stop_subscribers(){
@@ -376,6 +407,9 @@ export default {
         if (value){
           value.unsubscribe();
         }
+      }
+      if(this.topic_robot_status){
+        this.topic_robot_status.unsubscribe();
       }
       /*
       if (this.rviz_image1_topic){
@@ -414,6 +448,16 @@ export default {
         this.get_mode_service = new ROSLIB.Service({
             ros : this.ros,
             name : '/UI/get_mode',
+            serviceType : 'std_srvs/Trigger'
+        });
+        this.robot_enable_service = new ROSLIB.Service({
+            ros : this.ros,
+            name : '/robot_enable',
+            serviceType : 'std_srvs/Trigger'
+        });
+        this.robot_disable_service = new ROSLIB.Service({
+            ros : this.ros,
+            name : '/robot_disable',
             serviceType : 'std_srvs/Trigger'
         });
     },
@@ -462,6 +506,33 @@ export default {
           this.robot_moving = true
         }
       });
+    },
+
+    check_robot_con(){
+      setTimeout(() => { //Check periodically
+        this.ros.getNodes((nodes) => {
+            if (nodes.includes('/move_group')){
+              if (nodes.includes('/io_relay')){
+                this.real_robot_con = true
+                this.demo_robot_con = false
+                this.speed_limit_max = 0.2
+                this.accel_limit_max = 0.2
+              }
+              else{
+                this.real_robot_con = false
+                this.demo_robot_con = true
+                this.speed_limit_max = 1.0
+                this.accel_limit_max = 1.0
+              }
+            }
+            else{
+              this.real_robot_con = false
+              this.demo_robot_con = false
+              this.speed_limit_max = 0.0
+              this.accel_limit_max = 0.0
+            }        
+        });
+      }, 500)
     },
 
     publish_bool(topic, message){
@@ -539,6 +610,43 @@ export default {
       }
     },
 
+    robot_enable(){
+      var request = new ROSLIB.ServiceRequest({}); 
+      this.robot_enable_service.callService(request, (result) => {});
+    },
+
+    robot_disable(){
+      var request = new ROSLIB.ServiceRequest({}); 
+      this.robot_disable_service.callService(request, (result) => {});
+    },
+
+    check_speed_limit(){
+      if (parseFloat(this.speed_limit)>this.speed_limit_max){
+        this.speed_limit = String(this.speed_limit_max)
+      }
+      if (parseFloat(this.speed_limit)<0){
+        this.speed_limit = "0"
+      }
+    },
+
+    check_accel_limit(){
+      if (parseFloat(this.accel_limit)>this.accel_limit_max){
+        this.accel_limit = String(this.accel_limit_max)
+      }
+      if (parseFloat(this.accel_limit)<0){
+        this.accel_limit = "0"
+      }
+    },
+
+    check_gripper_limit(tool_name, lower_limit){
+      if (parseFloat(this.tools[tool_name]['distance'])>this.gripper_open_dist){
+        this.tools[tool_name]['distance'] = String(this.gripper_open_dist)
+      }
+      if (parseFloat(this.tools[tool_name]['distance'])<lower_limit){
+        this.tools[tool_name]['distance'] = String(lower_limit)
+      }
+    },
+
     move_group_manual(){
       //Predefined pose
       if(parseInt(this.manual_opt)==0){
@@ -546,9 +654,11 @@ export default {
             group: this.group_selected,
             type: parseInt(this.manual_opt),
             target_named: this.config_selected,
+            speed_limit: parseFloat(this.speed_limit),
+            accel_limit: parseFloat(this.accel_limit),
         });
       }
-      //Relative cartesian
+      //Relative and absolute cartesian
       else if (parseInt(this.manual_opt)==1 || parseInt(this.manual_opt)==2){
         let target_pose_left = null
         let target_pose_right = null
@@ -597,6 +707,8 @@ export default {
             group: 'arms',
             type: parseInt(this.manual_opt),
             target_pose: target_pose_msg,
+            speed_limit: parseFloat(this.speed_limit),
+            accel_limit: parseFloat(this.accel_limit),
         });
         console.log(request)
       }
@@ -653,6 +765,31 @@ export default {
       }
     },
 
+    move_gripper(arm, dist, type){
+      //Create topic name based of arm and type
+      var arm_fake = "left"
+      var topic_gripper = "/"+String(arm_fake)+"_wsg/action/"+type+"/goal"
+      //Publish that topic with a certain width and speed
+      if(parseFloat(dist)<this.gripper_grasp_dist){
+        dist = String(this.gripper_grasp_dist)
+      }
+      var gripperPublisher = new ROSLIB.Topic({
+        ros : this.ros,
+        name : topic_gripper,
+        messageType : 'rviz_test/gripper_ActActionGoal'
+      });
+
+      var gripperGoalMsg = new ROSLIB.Message({
+          width: parseFloat(dist),
+          speed: 30.0,
+      });
+      var gripperMsg = new ROSLIB.Message({
+          goal: gripperGoalMsg,
+      });
+
+      gripperPublisher.publish(gripperMsg);
+    },
+
     add_logs(msg){
       var time_now= new Date().toLocaleTimeString();
       time_now=time_now.slice(0,-3);
@@ -681,6 +818,7 @@ export default {
       this.init_services()
       this.update_variables()
       this.check_mode()
+      this.check_robot_con()
       this.reset_cartesian('both', 2)
     })
 
@@ -979,5 +1117,11 @@ option{
   border-radius: 5px;
   width: 150px;
   text-align: left;
+}
+.speed_limits input{
+  width: 50px;
+  margin-right: 20px;
+  margin-bottom: 10px;
+  padding-right: 4px;
 }
 </style>
