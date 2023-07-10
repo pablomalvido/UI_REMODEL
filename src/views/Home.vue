@@ -490,6 +490,9 @@ export default {
             }
             message='Route cables of ' + (value.label[0]) + " along " + guides.substring(0, guides.length-1)
           }
+          else if (value.type=='EC'){
+            message='Pick connector ' + (value.label[0]) + " from holder " + (value.spot[0].jig)
+          }
           else{
             message=value.type
           }
