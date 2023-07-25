@@ -164,7 +164,7 @@
     </div>
     </div>
 
-    <div class="video_area">
+    <div v-if="!visualize_confirmation" class="video_area">
       <div class="tab-pane active" id="left_tab1">
         <!-- <img id="left_stream1" class="video" style='height: 30% 240; width: 30% 425; object-fit: contain' src="../assets/img/placeholder.png"> -->
         <img v-if="show_stream" id="left_stream1" class="video" style='height: 319px; width: 425px; object-fit: contain' :src=rviz_image>
@@ -178,6 +178,17 @@
           <option disabled value="">Please Select</option>
           <option v-for="(topic, name) in camera_list" :key="name" :value="topic">{{name}}</option>
         </select>
+      </div>
+    </div>
+    <div v-else>
+      <div>
+        <img class="video" style='height: 319px; width: 425px; object-fit: contain' src="../assets/img/grasp_image.jpg">
+      </div>
+      <div>
+        <label>Grasp point: </label>
+        <button class="small_button" @click="confim_response('Y')">Confirm</button>
+        <button class="small_button" @click="confim_response('N')">Cancel</button> 
+        <button class="small_button" @click="confim_response('R')">Repeat</button> 
       </div>
     </div>
     </div>
@@ -229,6 +240,9 @@ export default {
       get_mode_service: null,
       robot_enable_service: null,
       robot_disable_service: null,
+      visualize_confirmation: false,
+      confirm_pub: null,
+      confirm_subs: null,
       index_topic: null,
       topic_mode: null,
       topic_logs: null,
@@ -240,7 +254,7 @@ export default {
       // rviz_image3_topic: null,
       rviz_image: "",
       rviz_image2: "../assets/img/placeholder.png",
-      camera_list: {RVIZ_Front: "/camera1/image/compressed", RVIZ_Side: "/camera2/image/compressed", RVIZ_guides: "/camera3/image/compressed"},
+      camera_list: {RVIZ_Front: "/camera1/image/compressed", RVIZ_Side: "/camera2/image/compressed", RVIZ_guides: "/camera3/image/compressed", OAK_camera: "/OAK/stream_compressed"},
       camera_selected: "/camera1/image/compressed",
       show_stream: false,
       last_time: 0,
@@ -388,6 +402,14 @@ export default {
       this.topic_robot_status.subscribe((message) => {
         this.robot_enable_status = message.motion_possible.val==1;
       });
+      this.confirm_subs = new ROSLIB.Topic({
+        ros : this.ros,
+        name : '/UI/confirm_req',
+        messageType : 'std_msgs/String'
+      });
+      this.confirm_subs.subscribe((message) => {
+        this.visualize_confirmation = true
+      });
     },
 
     stop_subscribers(){
@@ -442,8 +464,8 @@ export default {
         });
         this.get_all_operations_service = new ROSLIB.Service({
             ros : this.ros,
-            name : '/ELVEZ_platform_handler/all_operations',
-            serviceType : 'elvez_pkg/all_operations'
+            name : '/process/all_operations',
+            serviceType : 'UI_nodes_pkg/StringArray'
         });
         this.get_mode_service = new ROSLIB.Service({
             ros : this.ros,
@@ -478,22 +500,8 @@ export default {
       this.operation_list = []
       var request = new ROSLIB.ServiceRequest({});  
       this.get_all_operations_service.callService(request, (result) => {
-        for (const [key, value] of Object.entries(result.data)) {
-          var message=''
-          if (value.type=='PC'){
-            message='Place connector ' + (value.label[0]) + " in " + (value.spot[0].jig)
-          }
-          else if (value.type=='RC'){
-            var guides = ''
-            for (const [key2, spot] of Object.entries(value.spot)){
-              guides += (spot.jig) + "-"
-            }
-            message='Route cables of ' + (value.label[0]) + " along " + guides.substring(0, guides.length-1)
-          }
-          else{
-            message=value.type
-          }
-          this.operation_list.push(message)
+        for (const [key, value] of Object.entries(result.msg)) {
+          this.operation_list.push(value)
         }
       });
     },
@@ -788,6 +796,11 @@ export default {
       });
 
       gripperPublisher.publish(gripperMsg);
+    },
+
+    confim_response(msg){
+      this.publish_string('UI/confirm_res',msg)
+      this.visualize_confirmation = false
     },
 
     add_logs(msg){
