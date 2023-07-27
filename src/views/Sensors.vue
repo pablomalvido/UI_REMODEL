@@ -96,7 +96,7 @@ export default {
     init_subscribers(){
       this.forceR_topic = new ROSLIB.Topic({
         ros : this.ros,
-        name : 'sensors/force_right',
+        name : 'right_norbdo/forces',
         messageType : 'UI_nodes_pkg/forces'
       });
       this.forceR_topic.subscribe((message) => {
@@ -114,8 +114,8 @@ export default {
 
       this.forceL_topic = new ROSLIB.Topic({
         ros : this.ros,
-        name : 'sensors/force_left',
-        messageType : 'UI_nodes_pkg/forces'
+        name : 'left_norbdo/forces',
+        messageType : 'norbdo_force_sensor/forces'
       });
       this.forceL_topic.subscribe((message) => {
         var forces_msg = [message.Fx, message.Fy, message.Fz, message.Tz, message.Ty, message.Tz]
@@ -275,8 +275,8 @@ export default {
                 },
           scales: {
             y: {
-                max: 100,
-                min: -100,
+                max: 30,
+                min: -30,
                 ticks:{
                   maxTicksLimit: 11,
                 }
@@ -340,8 +340,8 @@ export default {
                 },
           scales: {
             y: {
-                max: 100,
-                min: -100,
+                max: 30,
+                min: -30,
                 ticks:{
                   maxTicksLimit: 11,
                 }
