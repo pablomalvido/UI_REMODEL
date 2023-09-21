@@ -35,7 +35,9 @@ export default {
       role_user: this.$route.params.role,
       launchers: {
         1: {name: 'Robot', launch_files:[{pkg: 'motoman_sda10f_moveit_config', file: 'moveit_planning_execution_no_gripper'}], active: 'gray', nodes:['/io_relay','/joint_state','/joint_trajectory_action','/move_group','/motion_streaming_interface','/robot_state_publisher'], roles:['Administrator', 'Operator']},
-        2: {name: 'Grippers', launch_files:[{pkg: 'wsg_50_driver', file: 'left_wsg_50_tcp_actions'}], active: 'gray', nodes:['/gripper_action_server_left', '/left_wsg/wsg_50_driver'], roles:['Administrator', 'Operator']},
+        2: {name: 'Grippers', launch_files:[{pkg: 'wsg_50_driver', file: 'dual_wsg_50_tcp_actions'}], active: 'gray', nodes:['/gripper_action_server', '/left_wsg/wsg_50_driver', '/right_wsg/wsg_50_driver'], roles:['Administrator', 'Operator']},
+        15: {name: 'Grippers (L)', launch_files:[{pkg: 'wsg_50_driver', file: 'left_wsg_50_tcp_actions'}], active: 'gray', nodes:['/gripper_action_server_left', '/left_wsg/wsg_50_driver'], roles:['Administrator', 'Operator']},
+        16: {name: 'Grippers (R)', launch_files:[{pkg: 'wsg_50_driver', file: 'right_wsg_50_tcp_actions'}], active: 'gray', nodes:['/gripper_action_server_right', '/right_wsg/wsg_50_driver'], roles:['Administrator', 'Operator']},
         3: {name: 'Robot demo', launch_files:[{pkg: 'motoman_sda10f_moveit_config', file: 'demo_no_gripper_camera'}], active: 'gray', nodes:['/joint_state_publisher','/move_group','/robot_state_publisher'], roles:['Administrator', 'Operator']},
         4: {name: 'CAD Platform', launch_files:[{pkg: 'elvez_pkg', file: 'launcher'}], active: 'gray', nodes:['/ATC_rf','/UC2_handler','/combs_rf','/platform_rf'], roles:['Administrator', 'Operator']}, 
         5: {name: 'Process control', launch_files:[{pkg: 'UI_nodes_pkg', file: 'process'}], active: 'gray', nodes:['/elvez_process_action_server','/process_action_client','/process_feedback'], roles:['Administrator', 'Operator']},
