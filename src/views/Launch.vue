@@ -42,7 +42,7 @@ export default {
         4: {name: 'CAD Platform', launch_files:[{pkg: 'elvez_pkg', file: 'launcher'}], active: 'gray', nodes:['/ATC_rf','/UC2_handler','/combs_rf','/platform_rf'], roles:['Administrator', 'Operator']}, 
         5: {name: 'Process control', launch_files:[{pkg: 'UI_nodes_pkg', file: 'process'}], active: 'gray', nodes:['/elvez_process_action_server','/process_action_client','/process_feedback'], roles:['Administrator', 'Operator']},
         6: {name: 'Manual control', launch_files:[{pkg: 'UI_nodes_pkg', file: 'moveit_manual'}], active: 'gray', nodes:['/moveit_manual'], roles:['Administrator']},
-        7: {name: 'Camera', launch_files:[{pkg: 'vision_pkg_full_demo', file: 'camera'}], active: 'gray', nodes:['/service_OAK_capture'], roles:['Administrator','Operator']},
+        7: {name: 'Camera', launch_files:[{pkg: 'vision_pkg_full_demo', file: 'camera'}], active: 'gray', nodes:['/multiple_OAK'], roles:['Administrator','Operator']},
         8: {name: 'Vision system', launch_files:[{pkg: 'vision_pkg_full_demo', file: 'vision'}], active: 'gray', nodes:['/DLO_detection_node'], roles:['Administrator','Operator']},
         9: {name: 'Configuration', launch_files:[{pkg: 'UI_nodes_pkg', file: 'config'}], active: 'gray', nodes:['/config_node'], roles:['Administrator']},  
         10: {name: 'Force sensor (R)', launch_files:[{pkg: 'norbdo_force_sensor', file: 'right_norbdo'}], active: 'gray', nodes:['/right_norbdo/norbdo_fs'], roles:['Administrator','Operator']},      

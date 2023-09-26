@@ -210,6 +210,14 @@
       </ul>
       </div>
       </div>
+        <div class="record_control">
+          <label>Global camera recording: </label>
+          <button :disabled="recording||!active_record" @click="publish_bool('/OAK/start_video_recording',true)">Start</button>
+          <button :disabled="!recording||!active_record" @click="publish_bool('/OAK/stop_video_recording',true)">Stop</button>
+        </div>
+        <div v-if="recording && active_record">
+          <label class="recording_time">{{recording_time}}</label>
+        </div>
     </div>
     </div>
   </div>
@@ -248,13 +256,17 @@ export default {
       topic_logs: null,
       topic_feedback: null,
       topic_robot_status: null,
+      topic_record_time: null,
       rviz_image_topics: [],
       // rviz_image1_topic: null,
       // rviz_image2_topic: null,
       // rviz_image3_topic: null,
       rviz_image: "",
       rviz_image2: "../assets/img/placeholder.png",
-      camera_list: {RVIZ_Front: "/camera1/image/compressed", RVIZ_Side: "/camera2/image/compressed", RVIZ_guides: "/camera3/image/compressed", OAK_camera: "/OAK/stream_compressed"},
+      active_record: false,
+      recording: false,
+      recording_time: "00:00",
+      camera_list: {RVIZ_Front: "/camera1/image/compressed", RVIZ_Side: "/camera2/image/compressed", RVIZ_guides: "/camera3/image/compressed", OAK_camera: "/OAK/stream_compressed", Global_camera: "/OAK/stream_compressed_1"},
       camera_selected: "/camera1/image/compressed",
       show_stream: false,
       last_time: 0,
@@ -285,7 +297,7 @@ export default {
       cartesian_position_abs_right: {'X': 0, 'Y': 0, 'Z': 0, 'Rx': 0, 'Ry': 0, 'Rz': 0},
       cartesian_position_abs_left: {'X': 0, 'Y': 0, 'Z': 0, 'Rx': 0, 'Ry': 0, 'Rz': 0},
       logs: [], //['Logs console...'],
-      feedback_msgs: [{prop: "speed_right", name: 'Speed right', val: '0.0 mm/s'}, {prop: "speed_left", name: 'Speed left', val: '0.0 mm/s'}, {prop: "eef_right_status", name: 'Right EEF status', val: 'Gripper open'}, {prop: "eef_left_status", name: 'Left EEF status', val: 'Gripper closed'}, {prop: "process_time", name: 'Process time', val: '00:00'}]
+      feedback_msgs: [{prop: "speed_right", name: 'Speed right', val: '0.0 mm/s'}, {prop: "speed_left", name: 'Speed left', val: '0.0 mm/s'}, {prop: "eef_right_status", name: 'Right EEF status', val: '-'}, {prop: "eef_left_status", name: 'Left EEF status', val: '-'}, {prop: "process_time", name: 'Process time', val: '00:00'}]
     }
   },
 
@@ -402,6 +414,7 @@ export default {
       this.topic_robot_status.subscribe((message) => {
         this.robot_enable_status = message.motion_possible.val==1;
       });
+
       this.confirm_subs = new ROSLIB.Topic({
         ros : this.ros,
         name : '/UI/confirm_req',
@@ -409,6 +422,23 @@ export default {
       });
       this.confirm_subs.subscribe((message) => {
         this.visualize_confirmation = true
+      });
+
+      this.topic_record_time = new ROSLIB.Topic({
+        ros : this.ros,
+        name : '/OAK/record_time',
+        messageType : 'std_msgs/String'
+      });
+      this.topic_record_time.subscribe((message) => {
+        console.log("AAA")
+        this.recording_time = message.data;
+        console.log(message.data)
+        if (message.data == "00:00"){
+          this.recording = false;
+        }
+        else{
+          this.recording = true;
+        }
       });
     },
 
@@ -432,6 +462,9 @@ export default {
       }
       if(this.topic_robot_status){
         this.topic_robot_status.unsubscribe();
+      }
+      if(this.topic_record_time){
+        this.topic_record_time.unsubscribe();
       }
       /*
       if (this.rviz_image1_topic){
@@ -809,12 +842,26 @@ export default {
       this.logs.unshift(time_now + ": " + msg);
     },
 
+    monitoring_method(){
+      this.ros.getNodes((nodes) => {
+        if (nodes.includes("/multiple_OAK")){
+          this.active_record = true;
+        }
+        else{
+          this.active_record = false;
+        }
+      });
+      setTimeout(() => { //Check periodically
+        this.monitoring_method() 
+      }, 1000);
+    },
+
     test_method(){
       console.log("Hello test")
       this.ros.getServices((services) => {
         console.log(services);
       });
-    },
+    }
   },
 
   mounted(){
@@ -846,7 +893,7 @@ export default {
     })
 
     this.checkStreamState()
-    this.test_method()
+    this.monitoring_method()
   },
 
   unmounted(){
@@ -1136,5 +1183,26 @@ option{
   margin-right: 20px;
   margin-bottom: 10px;
   padding-right: 4px;
+}
+.record_control{
+  margin-right: 15px;
+  margin-left: 15px;
+  margin-bottom: 15px;
+  margin-top: 20px;
+  font-size: 14px;
+}
+.record_control button{
+  width: 60px;
+  height: 25px;
+  margin: 3px;
+}
+.recording_time{
+  background-color: #716f8c;
+  color: #1d1b31;
+  padding: 3px;
+  padding-left: 5px;
+  border-radius: 5px;
+  width: 150px;
+  text-align: left;
 }
 </style>

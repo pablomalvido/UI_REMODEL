@@ -67,6 +67,7 @@ export default {
           {name: 'Gripper slow speed (mm/s)', prop: 'gripper_speed_slow', val: 'NaN'}]},
         {group: 'Force sensor', params:
           [{name: 'Cable tension (N)', prop: 'cable_tension', val: 'NaN'},
+          {name: 'Connector tension (N)', prop: 'connector_tension', val: 'NaN'},
           {name: 'Force control (Y/N)', prop: 'force_control_real', val: 'NaN'}]}],
       config_file_name: '../files/config.csv',
       config_changed: false,
