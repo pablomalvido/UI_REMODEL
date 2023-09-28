@@ -42,6 +42,7 @@ export default {
           {name: 'Tension speed (mm/s)',prop: 'speed_tension_real_mms', val: 'NaN'},
           {name: 'Max speed (%)', prop: 'speed_real_per', val: 'NaN'}, 
           {name: 'Gripper control (Y/N)', prop: 'grippers_control_real', val: 'NaN'}, 
+          {name: 'Gun control (Y/N)', prop: 'gun_control_real', val: 'NaN'}, 
           {name: 'Use camera (Y/N)', prop: 'use_camera_real', val: 'NaN'}]},
         {group:'Simulated robot', params:         
           [{name: 'Fast speed (mm/s)', prop: 'speed_fast_demo_mms', val: 'NaN'},

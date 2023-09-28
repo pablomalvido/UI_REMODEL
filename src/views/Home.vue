@@ -136,7 +136,7 @@
           </div>
           <div v-else-if="value.includes('taping_gun')">
             <label> taping gun</label>
-            <button class="small_button">Tape</button>
+            <button class="small_button" :disabled="taping" @click="actuate_gun()">Tape</button>
           </div>
           <div v-else>
             <label> none</label>
@@ -154,11 +154,11 @@
           <option v-for="(arm, index) in ATC_robots" :key="index" :value="arm">{{arm}}</option>
         </select>
         <label>Tool: </label>
-        <select v-model="tool_selected">
+        <select v-model="tool_selected" :onchange="update_selected_tool()">
           <!-- <option disabled value="">Please Select</option> -->
-          <option v-for="(tool, index) in ATC_tools" :key="index" :value="tool">{{tool}}</option>
+          <option v-for="(tool, index) in ATC_tools[arm_selected]" :key="index" :value="tool">{{tool}}</option>
         </select>
-        <button class="medium_button">Change</button>
+        <button class="medium_button" :disabled="robot_moving" @click="ATC_function()">Change</button>
       </div>
 
     </div>
@@ -248,9 +248,11 @@ export default {
       get_mode_service: null,
       robot_enable_service: null,
       robot_disable_service: null,
+      tape_service: null,
       visualize_confirmation: false,
       confirm_pub: null,
       confirm_subs: null,
+      tool_subs: null,
       index_topic: null,
       topic_mode: null,
       topic_logs: null,
@@ -274,11 +276,11 @@ export default {
       operation_list: ['Error loading operations'],//['Pick wiring harness', 'Insert connector', 'Route cables', 'Tape'],
       op_selected: 0,
       ATC_robots: ['right', 'left'],
-      ATC_tools: ['taping_gun', 'gripper'],
+      ATC_tools: {'right':['taping_gun', 'gripper_right'],'left':['taping_gun', 'gripper_left']},
       tools: {gripper_right:{distance:0}, gripper_right:{distance:0}, taping_gun:''},
       arm_tools: {right: 'gripper_right', left: 'taping_gun'},
       arm_selected: 'left',
-      tool_selected: 'gripper',
+      tool_selected: 'gripper_left',
       robot_groups: {}, /*{arm_right:['pose1', 'pose2'], arm_left:['poseX','poseY']},*/ //Get with a service
       group_selected: '',
       //group_configs: [], //Get with a service
@@ -286,6 +288,7 @@ export default {
       control_opt: 0,
       manual_opt: 0,
       robot_moving: false,
+      taping: false,
       speed_limit: "0.1",
       accel_limit: "0.1",
       speed_limit_max: 0.2,
@@ -440,6 +443,15 @@ export default {
           this.recording = true;
         }
       });
+
+      this.tool_subs = new ROSLIB.Topic({
+        ros : this.ros,
+        name : '/UI/tool',
+        messageType : 'UI_nodes_pkg/ATC_msg'
+      });
+      this.tool_subs.subscribe((message) => {
+        this.arm_tools[message.arm_side] = message.new_tool
+      });
     },
 
     stop_subscribers(){
@@ -465,6 +477,9 @@ export default {
       }
       if(this.topic_record_time){
         this.topic_record_time.unsubscribe();
+      }
+      if(this.tool_subs){
+        this.tool_subs.unsubscribe();
       }
       /*
       if (this.rviz_image1_topic){
@@ -513,6 +528,11 @@ export default {
         this.robot_disable_service = new ROSLIB.Service({
             ros : this.ros,
             name : '/robot_disable',
+            serviceType : 'std_srvs/Trigger'
+        });
+        this.tape_service = new ROSLIB.Service({
+            ros : this.ros,
+            name : '/gun/tape',
             serviceType : 'std_srvs/Trigger'
         });
     },
@@ -829,6 +849,37 @@ export default {
       });
 
       gripperPublisher.publish(gripperMsg);
+    },
+
+    actuate_gun(){
+      this.taping = true
+      var request = new ROSLIB.ServiceRequest({});  
+      this.tape_service.callService(request, (result) => {
+        this.taping = false
+      });
+    },
+
+    update_selected_tool(){
+      console.log(this.tool_selected)
+      if (!(this.ATC_tools[this.arm_selected].includes(this.tool_selected)) || this.tool_selected === undefined || this.tool_selected === null){
+        this.tool_selected = JSON.parse(JSON.stringify(this.ATC_tools[this.arm_selected]))[0]
+      }
+    },
+
+    ATC_function(){
+      var ATCPublisher = new ROSLIB.Topic({
+        ros : this.ros,
+        name : '/UI/ATC',
+        messageType : 'UI_nodes_pkg/ATC_msg'
+      });
+
+      var ATCTopic = new ROSLIB.Message({
+        new_tool: this.tool_selected,
+        arm_side: this.arm_selected,
+      });
+
+      ATCPublisher.publish(ATCTopic);
+      console.log(this.rosCon)
     },
 
     confim_response(msg){
