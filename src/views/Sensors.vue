@@ -275,8 +275,8 @@ export default {
                 },
           scales: {
             y: {
-                max: 30,
-                min: -30,
+                max: 10,
+                min: -10,
                 ticks:{
                   maxTicksLimit: 11,
                 }
@@ -340,8 +340,8 @@ export default {
                 },
           scales: {
             y: {
-                max: 30,
-                min: -30,
+                max: 10,
+                min: -10,
                 ticks:{
                   maxTicksLimit: 11,
                 }
@@ -587,8 +587,8 @@ export default {
   z-index: 200;
 }
 .canvas_container{
-  max-height: 500px;
-  width: 500px;
+  max-height: 700px;
+  width: 700px;
   margin: 30px;
 }
 .canvas_container_square{
