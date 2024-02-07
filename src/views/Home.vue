@@ -212,11 +212,33 @@
       </div>
         <div class="record_control">
           <label>Global camera recording: </label>
-          <button :disabled="recording||!active_record" @click="publish_bool('/OAK/start_video_recording',true)">Start</button>
-          <button :disabled="!recording||!active_record" @click="publish_bool('/OAK/stop_video_recording',true)">Stop</button>
+          <!--button :disabled="recording||!active_record" @click="publish_bool('/OAK/start_video_recording',true)">Start</button>
+          <button :disabled="!recording||!active_record" @click="publish_bool('/OAK/stop_video_recording',true)">Stop</button-->
+          <button :disabled="recording['0']||!active_record" @click="publish_bool('/OAK/start_video_recording_multiple0',true)">Start</button>
+          <button :disabled="!recording['0']||!active_record" @click="publish_bool('/OAK/stop_video_recording_multiple0',true)">Stop</button>
         </div>
-        <div v-if="recording && active_record">
-          <label class="recording_time">{{recording_time}}</label>
+        <div v-if="recording['0'] && active_record">
+          <label class="recording_time">{{recording_time['0']}}</label>
+        </div>
+        <div class="record_control">
+          <label>WH1 camera recording: </label>
+          <!--button :disabled="recording||!active_record" @click="publish_bool('/OAK/start_video_recording',true)">Start</button>
+          <button :disabled="!recording||!active_record" @click="publish_bool('/OAK/stop_video_recording',true)">Stop</button-->
+          <button :disabled="recording['1']||!active_record" @click="publish_bool('/OAK/start_video_recording_multiple1',true)">Start</button>
+          <button :disabled="!recording['1']||!active_record" @click="publish_bool('/OAK/stop_video_recording_multiple1',true)">Stop</button>
+        </div>
+        <div v-if="recording['1'] && active_record">
+          <label class="recording_time">{{recording_time['1']}}</label>
+        </div>
+        <div class="record_control">
+          <label>WH2 camera recording: </label>
+          <!--button :disabled="recording||!active_record" @click="publish_bool('/OAK/start_video_recording',true)">Start</button>
+          <button :disabled="!recording||!active_record" @click="publish_bool('/OAK/stop_video_recording',true)">Stop</button-->
+          <button :disabled="recording['2']||!active_record" @click="publish_bool('/OAK/start_video_recording_multiple2',true)">Start</button>
+          <button :disabled="!recording['2']||!active_record" @click="publish_bool('/OAK/stop_video_recording_multiple2',true)">Stop</button>
+        </div>
+        <div v-if="recording['2'] && active_record">
+          <label class="recording_time">{{recording_time['2']}}</label>
         </div>
     </div>
     </div>
@@ -266,10 +288,10 @@ export default {
       rviz_image: "",
       rviz_image2: "../assets/img/placeholder.png",
       active_record: false,
-      recording: false,
-      recording_time: "00:00",
-      camera_list: {RVIZ_Front: "/camera1/image/compressed", RVIZ_Side: "/camera2/image/compressed", RVIZ_guides: "/camera3/image/compressed", OAK_camera: "/OAK/stream_compressed", Global_camera: "/OAK/stream_compressed_1"},
-      camera_selected: "/camera1/image/compressed",
+      recording: {'0':false, '1':false, '2':false},
+      recording_time: {'0':"00:00", '1':"00:00", '2':"00:00"},
+      camera_list: {RVIZ_Front: "/camera1/image/compressed", RVIZ_Side: "/camera2/image/compressed", RVIZ_guides: "/camera3/image/compressed", Global_camera: "/OAK/stream_compressed_1", OAK_camera_WH1: "/OAK/stream_compressed", OAK_camera_WH2: "/OAK/stream_compressed_2"},
+      camera_selected: "/camera3/image/compressed",
       show_stream: false,
       last_time: 0,
       paused_bool: false,
@@ -434,13 +456,15 @@ export default {
       });
       this.topic_record_time.subscribe((message) => {
         console.log("AAA")
-        this.recording_time = message.data;
+        var time_data = message.data.split('-')[0];
+        var cam_id_data = message.data.split('-')[1];
+        this.recording_time[cam_id_data] = time_data;
         console.log(message.data)
-        if (message.data == "00:00"){
-          this.recording = false;
+        if (time_data == "00:00"){
+          this.recording[cam_id_data] = false;
         }
         else{
-          this.recording = true;
+          this.recording[cam_id_data] = true;
         }
       });
 
