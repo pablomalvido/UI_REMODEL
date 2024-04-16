@@ -52,7 +52,6 @@ export default {
             active_alarms_temp : [],
             inactive_alarms_temp : [],
             test: "",
-            problems: {"robot": {"detected": false, "active": false}, "Estop": {"detected": false, "active": false}, "curtain": {"detected": false, "active": false}, "door": {"detected": false, "active": false}, "UI": {"detected": false, "active": false}, "vision": {"detected": false, "active": false}},
         }
     },
 

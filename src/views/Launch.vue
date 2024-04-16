@@ -48,7 +48,7 @@ export default {
         15: {name: 'Configuration', launch_files:[{pkg: 'UI_nodes_pkg', file: 'config'}], active: 'gray', nodes:['/config_node'], roles:['Administrator']},  
         12: {name: 'Force sensor (L)', launch_files:[{pkg: 'norbdo_force_sensor', file: 'left_norbdo'}], active: 'gray', nodes:['/left_norbdo/norbdo_fs'], roles:['Administrator','Operator']},
         13: {name: 'Force sensor (R)', launch_files:[{pkg: 'norbdo_force_sensor', file: 'right_norbdo'}], active: 'gray', nodes:['/right_norbdo/norbdo_fs'], roles:['Administrator','Operator']},      
-        //14: {name: 'Fake sensors', launch_files:[{pkg: 'UI_nodes_pkg', file: 'fake_sensors'}], active: 'gray', nodes:['/fake_sensors'], roles:['Administrator']},
+        14: {name: 'Fake sensors', launch_files:[{pkg: 'UI_nodes_pkg', file: 'fake_sensors'}], active: 'gray', nodes:['/fake_sensors'], roles:['Administrator']},
         18: {name: 'Record trajectory', launch_files:[{pkg: 'UI_nodes_pkg', file: 'record_traj'}], active: 'gray', nodes:['/record_traj'], roles:['Administrator']},
         17: {name: 'Safety manager', launch_files:[{pkg: 'remodel_safety_manager', file: 'RSM'}], active: 'gray', nodes:['/RSM_PLC_connection'], roles:['Administrator', 'Operator']},
         16: {name: 'CAD files update', launch_files:[{pkg: 'elvez_pkg', file: 'update_files'}], active: 'gray', nodes:['/CAD_loader'], roles:['Administrator']},                

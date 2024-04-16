@@ -3,7 +3,7 @@
       <TitlePage page='Contact-REMODEL'/>
     </div>
     
-    <h1>Check out our online handles and repositories here</h1>
+    <h1>Check out the REMODEL online handles and repositories here</h1>
 
     <div id="icon_layout_container">        
         <div id="icon_layout">
@@ -18,20 +18,19 @@
             <a href="https://dei-gitlab.dei.unibo.it/palli_group" target="_blank"><img src="../assets/img/gitlab.png" alt="REMODEL- Palli group-GitLab" id="logoGit"></a>
         </div><br>
     </div>
-    <h2 id="h2_add">For more information about REMODEL project, contact our Co-ordinator</h2><br>
+    <h2 id="h2_add">For more information, you can contact the developer</h2><br>
     <div id="coordinator_info">
         
-        <div id="Project_Coordinator">
+        <div id="Contact information">
             <img src="../assets/img/project_coordinator.png" alt="Gianluca Palli- Coordinator" id="logo_coordinator" href="https://remodel-project.eu/">
         </div>
         <div id="coordinator_details">
             <br>
-            <h2 id="h2_coord"><u>Gianluca Palli</u></h2>  
-            <h3>Full Professor</h3>
-            <h4>Department of Electrical, Electronic, and Information Engineering "Guglielmo Marconi"</h4><br>
-            <p><strong>Email:</strong> <a href="gianluca.palli@unibo.it"> gianluca.palli@unibo.it</a></p><br>
-            <p><strong>Telephone1:</strong> +39 051 20 9 3186</p>
-            <p><strong>Telephone2:</strong> +39 051 20 9 3079</p>
+            <h2 id="h2_coord"><u>Pablo Malvido Fresnillo</u></h2>  
+            <h3>Tampere University</h3>
+            <h4>Future Automation Systems & Technologies Laboratory</h4><br>
+            <p><strong>Email:</strong> <a href="pablo.malvidofresnillo@tuni.fi"> pablo.malvidofresnillo@tuni.fi</a></p><br>
+            <p><strong>Telephone:</strong> +358 504656286</p>
         </div>
     </div>
     

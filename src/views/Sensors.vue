@@ -52,76 +52,55 @@ export default {
       modeProp: '',
       role: this.$route.params.role,
       sensors: { //types - 0: time chart, 1: xy chart
-        1: {name: 'FL', id: 'chartForceL', type: 0, title: "Left force sensor", limits_y:[-10,10], labels:['Fx','Fy','Fz','Tx','Ty','Tz'], topic:'left_norbdo/forces', msg:'UI_nodes_pkg/forces'},
-        2: {name: 'FR', id: 'chartForceR', type: 0, title: "Right force sensor", limits_y:[-10,10], labels:['Fx','Fy','Fz','Tx','Ty','Tz'], topic:'right_norbdo/forces', msg:'UI_nodes_pkg/forces'},
-        3: {name: 'TL', id: 'chartTactileL', type: 1, title: "Left tactile sensor", limits_xy:[0,6,0,6], topic:'sensors/tactile_left', msg:'UI_nodes_pkg/tactile'},
-        4: {name: 'TR', id: 'chartTactileR', type: 1, title: "Right tactile sensor", limits_xy:[0,6,0,6], topic:'sensors/tactile_right', msg:'UI_nodes_pkg/tactile'},
+        1: {name: 'FL', id: 'chartForceL', type: 0, title: "Left force sensor", limits_y:[-10,10], labels:['Fx','Fy','Fz','Tx','Ty','Tz'], topic:'left_norbdo/forces', msg:'UI_nodes_pkg/sensorT'},
+        2: {name: 'FR', id: 'chartForceR', type: 0, title: "Right force sensor", limits_y:[-10,10], labels:['Fx','Fy','Fz','Tx','Ty','Tz'], topic:'right_norbdo/forces', msg:'UI_nodes_pkg/sensorT'},
+        3: {name: 'TL', id: 'chartTactileL', type: 1, title: "Left tactile sensor", limits_xy:[0,6,0,6], topic:'sensors/tactile_left', msg:'UI_nodes_pkg/sensorXY'},
+        4: {name: 'TR', id: 'chartTactileR', type: 1, title: "Right tactile sensor", limits_xy:[0,6,0,6], topic:'sensors/tactile_right', msg:'UI_nodes_pkg/sensorXY'},
       },
       checkedCharts: ['FL', 'FR', 'TL', 'TR'], //Init config
       chartObjList: {},
+      sensor_topics: [],
     }
   },
 
   methods: {
 
     init_subscribers(){
-      this.forceR_topic = new ROSLIB.Topic({
-        ros : this.ros,
-        name : 'right_norbdo/forces',
-        messageType : 'UI_nodes_pkg/forces'
-      });
-      this.forceR_topic.subscribe((message) => {
-        var forces_msg = [message.Fx, message.Fy, message.Fz, message.Tz, message.Ty, message.Tz]
-        for (let i = 0; i < 6; i++) {  
-          var values = this.chartObjList["chartForceR"].data.datasets[i].data.slice(1);
-          values.push(forces_msg[i])
-          this.chartObjList["chartForceR"].data.datasets[i].data = values;
+      for (const [key, el] of Object.entries(this.sensors)) {
+        this.sensor_topics[key.toString()] = new ROSLIB.Topic({
+          ros : this.ros,
+          name : el.topic,
+          messageType : el.msg
+        });
+        if(el.type=="0"){
+          this.sensor_topics[key.toString()].subscribe((message) => {
+            for (let i = 0; i < message.data.length; i++) {  
+              var values = this.chartObjList[el.id].data.datasets[i].data.slice(1);
+              values.push(message.data[i])
+              this.chartObjList[el.id].data.datasets[i].data = values;
+            }
+            var valuesX = this.chartObjList[el.id].data.labels.slice(1);
+            valuesX.push(valuesX[valuesX.length-1]+1)
+            this.chartObjList[el.id].data.labels = valuesX
+            this.chartObjList[el.id].update();
+          });
         }
-        var valuesX = this.chartObjList["chartForceR"].data.labels.slice(1);
-        valuesX.push(valuesX[valuesX.length-1]+1)
-        this.chartObjList["chartForceR"].data.labels = valuesX
-        this.chartObjList["chartForceR"].update();
-      });
-
-      this.forceL_topic = new ROSLIB.Topic({
-        ros : this.ros,
-        name : 'left_norbdo/forces',
-        messageType : 'norbdo_force_sensor/forces'
-      });
-      this.forceL_topic.subscribe((message) => {
-        var forces_msg = [message.Fx, message.Fy, message.Fz, message.Tz, message.Ty, message.Tz]
-        for (let i = 0; i < 6; i++) {  
-          var values = this.chartObjList["chartForceL"].data.datasets[i].data.slice(1);
-          values.push(forces_msg[i])
-          this.chartObjList["chartForceL"].data.datasets[i].data = values;
+        else if(el.type=="1"){
+          this.sensor_topics[key.toString()].subscribe((message) => {
+            this.chartObjList[el.id].data.labels = message.x
+            this.chartObjList[el.id].data.datasets[0].data = message.y
+            this.chartObjList[el.id].update();
+          });
         }
-        var valuesX = this.chartObjList["chartForceL"].data.labels.slice(1);
-        valuesX.push(valuesX[valuesX.length-1]+1)
-        this.chartObjList["chartForceL"].data.labels = valuesX
-        this.chartObjList["chartForceL"].update();
-      });
+      }
+    },
 
-      this.tactileL_topic = new ROSLIB.Topic({
-        ros : this.ros,
-        name : 'sensors/tactile_left',
-        messageType : 'UI_nodes_pkg/tactile'
-      });
-      this.tactileL_topic.subscribe((message) => {
-        this.chartObjList["chartTactileL"].data.labels = message.x
-        this.chartObjList["chartTactileL"].data.datasets[0].data = message.y
-        this.chartObjList["chartTactileL"].update();
-      });
-
-      this.tactileR_topic = new ROSLIB.Topic({
-        ros : this.ros,
-        name : 'sensors/tactile_right',
-        messageType : 'UI_nodes_pkg/tactile'
-      });
-      this.tactileR_topic.subscribe((message) => {
-        this.chartObjList["chartTactileR"].data.labels = message.x
-        this.chartObjList["chartTactileR"].data.datasets[0].data = message.y
-        this.chartObjList["chartTactileR"].update();
-      });
+    stop_subscribers(){
+      for (const [key, value] of Object.entries(this.sensor_topics)) {
+        if (value){
+          value.unsubscribe();
+        }
+      }
     },
 
     check_graph(sensor){
@@ -141,35 +120,6 @@ export default {
         this.chartObjList[sensor.id].destroy()
       }
     },
-
-    publish_string(topic, message){
-      var loadPublisher = new ROSLIB.Topic({
-        ros : this.ros,
-        name : topic,
-        messageType : 'std_msgs/String'
-      });
-
-      var loadTopic = new ROSLIB.Message({
-        data: message['msg']
-      });
-
-      loadPublisher.publish(loadTopic);
-    },
-
-    publish_string_constant(topic, message){
-      var loadPublisher = new ROSLIB.Topic({
-        ros : this.ros,
-        name : topic,
-        messageType : 'std_msgs/String'
-      });
-
-      var loadTopic = new ROSLIB.Message({
-          data: message
-      });
-
-      loadPublisher.publish(loadTopic);
-    },
-
 
     base10toBase255(number) {
     const base = 255;
@@ -207,7 +157,6 @@ export default {
         var color_label = 'rgb(' + color_i[0] + ','+ color_i[1] +','+ color_i[2] +')'
         data_chrt.datasets.push({label: label, data: y_values, fill: false, borderColor: color_label, tension: 0.1})
         i+=1
-        console.log(color_i)
       }
 
       const chartTimeObj = new Chart(ctx, {
@@ -379,6 +328,7 @@ export default {
   },
 
   unmounted(){
+    this.stop_subscribers()
     this.ros.close()
   }
 }
