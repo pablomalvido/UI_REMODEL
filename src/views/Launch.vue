@@ -28,10 +28,8 @@ export default {
 
   data(){
     return{
-      msg: 'Hellooo',
       rosCon: false,
       modeProp: '',
-      menuOpen: true,
       role_user: this.$route.params.role,
       launchers: {
         1: {name: 'Robot', launch_files:[{pkg: 'motoman_sda10f_moveit_config', file: 'moveit_planning_execution_no_gripper'}], active: 'gray', nodes:['/io_relay','/joint_state','/joint_trajectory_action','/move_group','/motion_streaming_interface','/robot_state_publisher'], roles:['Administrator', 'Operator']},
@@ -56,7 +54,7 @@ export default {
         99: {name: 'All', launch_files:[], active: 'gray', nodes:[''], roles:['Administrator', 'Operator']},
       },
       global_launching: false,
-      launch_service: null,
+      //launch_service: null,
       stop_service: null,  
       active_nodes: [],
       first_time: true,

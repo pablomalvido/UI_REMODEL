@@ -47,7 +47,6 @@ export default {
   
   data(){
     return{
-      msg: 'Hellooo',
       rosCon: false,
       modeProp: '',
       role: this.$route.params.role,
@@ -57,7 +56,7 @@ export default {
         3: {name: 'TL', id: 'chartTactileL', type: 1, title: "Left tactile sensor", limits_xy:[0,6,0,6], topic:'sensors/tactile_left', msg:'UI_nodes_pkg/sensorXY'},
         4: {name: 'TR', id: 'chartTactileR', type: 1, title: "Right tactile sensor", limits_xy:[0,6,0,6], topic:'sensors/tactile_right', msg:'UI_nodes_pkg/sensorXY'},
       },
-      checkedCharts: ['FL', 'FR', 'TL', 'TR'], //Init config
+      checkedCharts: [],
       chartObjList: {},
       sensor_topics: [],
     }
@@ -297,6 +296,13 @@ export default {
       }
     },
     
+  },
+
+  beforeMount(){
+    //Populate the variables
+    for (const [key, el] of Object.entries(this.sensors)) {
+      this.checkedCharts.push(el.name)
+    }
   },
 
   mounted(){

@@ -263,6 +263,8 @@ export default {
       demo_robot_con: false,
       robot_enable_status: false,
       role_user: this.$route.params.role,
+
+      //Services
       get_arms_pose_service: null,
       get_moveit_groups_service: null,
       move_group_service: null,
@@ -271,7 +273,8 @@ export default {
       robot_enable_service: null,
       robot_disable_service: null,
       tape_service: null,
-      visualize_confirmation: false,
+
+      //Topics
       confirm_pub: null,
       confirm_subs: null,
       tool_subs: null,
@@ -281,31 +284,34 @@ export default {
       topic_feedback: null,
       topic_robot_status: null,
       topic_record_time: null,
+
+      //Video stream and record
       rviz_image_topics: [],
-      // rviz_image1_topic: null,
-      // rviz_image2_topic: null,
-      // rviz_image3_topic: null,
       rviz_image: "",
       rviz_image2: "../assets/img/placeholder.png",
-      active_record: false,
-      recording: {'0':false, '1':false, '2':false},
-      recording_time: {'0':"00:00", '1':"00:00", '2':"00:00"},
+      visualize_confirmation: false,
       camera_list: {RVIZ_Front: "/camera1/image/compressed", RVIZ_Side: "/camera2/image/compressed", RVIZ_guides: "/camera3/image/compressed", Global_camera: "/OAK/stream_compressed_1", OAK_camera_WH1: "/OAK/stream_compressed", OAK_camera_WH2: "/OAK/stream_compressed_2"},
       camera_selected: "/camera3/image/compressed",
       show_stream: false,
+      active_record: false,
+      recording: {'0':false, '1':false, '2':false},
+      recording_time: {'0':"00:00", '1':"00:00", '2':"00:00"},
+
+      //Automatic control
       last_time: 0,
       paused_bool: false,
       operation_list: ['Error loading operations'],//['Pick wiring harness', 'Insert connector', 'Route cables', 'Tape'],
       op_selected: 0,
-      ATC_robots: ['right', 'left'],
+
+      //Manual control
+      ATC_robots: [], //Automatically populated from ATC_tools info
       ATC_tools: {'right':['taping_gun', 'gripper_right'],'left':['taping_gun', 'gripper_left']},
-      tools: {gripper_right:{distance:0}, gripper_right:{distance:0}, taping_gun:''},
-      arm_tools: {right: 'gripper_right', left: 'taping_gun'},
-      arm_selected: 'left',
-      tool_selected: 'gripper_left',
-      robot_groups: {}, /*{arm_right:['pose1', 'pose2'], arm_left:['poseX','poseY']},*/ //Get with a service
+      tools: {gripper_right:{distance:0}, gripper_right:{distance:0}, taping_gun:''}, //Default motion value
+      arm_tools: {right: 'gripper_right', left: 'taping_gun'}, //Default attached tools
+      arm_selected: 'left', //Deafult selected arm
+      tool_selected: '',
+      robot_groups: {}, //Get with a service
       group_selected: '',
-      //group_configs: [], //Get with a service
       config_selected: '',
       control_opt: 0,
       manual_opt: 0,
@@ -321,6 +327,8 @@ export default {
       cartesian_position_rel_left: {'X': 0, 'Y': 0, 'Z': 0, 'Rx': 0, 'Ry': 0, 'Rz': 0},
       cartesian_position_abs_right: {'X': 0, 'Y': 0, 'Z': 0, 'Rx': 0, 'Ry': 0, 'Rz': 0},
       cartesian_position_abs_left: {'X': 0, 'Y': 0, 'Z': 0, 'Rx': 0, 'Ry': 0, 'Rz': 0},
+
+      //Feedback pannels
       logs: [], //['Logs console...'],
       feedback_msgs: [{prop: "speed_right", name: 'Speed right', val: '0.0 mm/s'}, {prop: "speed_left", name: 'Speed left', val: '0.0 mm/s'}, {prop: "eef_right_status", name: 'Right EEF status', val: '-'}, {prop: "eef_left_status", name: 'Left EEF status', val: '-'}, {prop: "process_time", name: 'Process time', val: '00:00'}]
     }
@@ -355,47 +363,6 @@ export default {
           }
         });
       }
-
-      /*
-      this.rviz_image1_topic = new ROSLIB.Topic({
-        ros : this.ros,
-        name : '/camera1/image/compressed',
-        messageType : 'sensor_msgs/CompressedImage'
-      });
-      this.rviz_image1_topic.subscribe((message) => {
-        //console.log('RVIZ image 1 updated');
-        if (this.rviz_image1_topic.name == this.camera_selected){
-          this.last_time = Date.now();
-          this.rviz_image = "data:image/jpg;base64," + message.data;
-        }
-      });
-
-      this.rviz_image2_topic = new ROSLIB.Topic({
-        ros : this.ros,
-        name : '/camera2/image/compressed',
-        messageType : 'sensor_msgs/CompressedImage'
-      });      
-      this.rviz_image2_topic.subscribe((message) => {
-        //console.log('RVIZ image 2 updated');
-        if (this.rviz_image2_topic.name == this.camera_selected){
-          this.last_time = Date.now();
-          this.rviz_image = "data:image/jpg;base64," + message.data;
-        }
-      });
-
-      this.rviz_image3_topic = new ROSLIB.Topic({
-        ros : this.ros,
-        name : '/camera3/image/compressed',
-        messageType : 'sensor_msgs/CompressedImage'
-      });      
-      this.rviz_image3_topic.subscribe((message) => {
-        //console.log('RVIZ image 3 updated');
-        if (this.rviz_image3_topic.name == this.camera_selected){
-          this.last_time = Date.now();
-          this.rviz_image = "data:image/jpg;base64," + message.data;
-        }
-      });
-      */
 
       this.topic_mode = new ROSLIB.Topic({
         ros : this.ros,
@@ -505,17 +472,6 @@ export default {
       if(this.tool_subs){
         this.tool_subs.unsubscribe();
       }
-      /*
-      if (this.rviz_image1_topic){
-        this.rviz_image1_topic.unsubscribe();
-      }
-      if (this.rviz_image2_topic){
-        this.rviz_image2_topic.unsubscribe();
-      }
-      if (this.rviz_image3_topic){
-        this.rviz_image3_topic.unsubscribe();
-      }
-      */
     },
 
     init_services(){
@@ -937,6 +893,14 @@ export default {
         console.log(services);
       });
     }
+  },
+
+  beforeMount(){
+    //Populate the variables
+    for (const [key, el] of Object.entries(this.ATC_tools)) {
+      this.ATC_robots.push(key)
+    }
+    this.tool_selected = this.arm_tools[this.arm_selected]
   },
 
   mounted(){
