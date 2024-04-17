@@ -265,25 +265,24 @@ export default {
       role_user: this.$route.params.role,
 
       //Services
-      get_arms_pose_service: null,
-      get_moveit_groups_service: null,
-      move_group_service: null,
-      get_all_operations_service: null,
-      get_mode_service: null,
-      robot_enable_service: null,
-      robot_disable_service: null,
-      tape_service: null,
+      get_arms_pose_service_info: {'srv':'/UI/get_arms_pose','msg':'UI_nodes_pkg/ArmsPose'},
+      get_moveit_groups_service_info: {'srv':'/UI/get_moveit_groups','msg':'UI_nodes_pkg/MoveitGroups'},
+      get_all_operations_service_info: {'srv':'/process/all_operations','msg':'UI_nodes_pkg/StringArray'},
+      move_group_service_info: {'srv':'/UI/move_group','msg':'UI_nodes_pkg/MoveGroupSrv'},
+      get_mode_service_info: {'srv':'/UI/get_mode','msg':'std_srvs/Trigger'},
+      robot_enable_service_info: {'srv':'robot_enable','msg':'std_srvs/Trigger'},
+      robot_disable_service_info: {'srv':'robot_disable','msg':'std_srvs/Trigger'},
+      tape_service_info: {'srv':'/gun/tape','msg':'std_srvs/Trigger'},
 
       //Topics
-      confirm_pub: null,
-      confirm_subs: null,
-      tool_subs: null,
-      index_topic: null,
-      topic_mode: null,
-      topic_logs: null,
-      topic_feedback: null,
-      topic_robot_status: null,
-      topic_record_time: null,
+      confirm_topic: {'topic':'/UI/confirm_req','msg':'std_msgs/String'},
+      tool_topic: {'topic':'UI/tool','msg':'UI_nodes_pkg/ATC_msg'},
+      index_topic: {'topic':'/UI/process_index','msg':'std_msgs/Int32'},
+      mode_topic: {'topic':'/UI/mode','msg':'std_msgs/String'},
+      logs_topic: {'topic':'/UI/logs','msg':'std_msgs/String'},
+      feedback_topic: {'topic':'/UI/feedback','msg':'UI_nodes_pkg/configProp'},
+      robot_status_topic: {'topic':'/robot_status','msg':'industrial_msgs/RobotStatus'},
+      record_time_topic: {'topic':'/OAK/record_time','msg':'std_msgs/String'},
 
       //Video stream and record
       rviz_image_topics: [],
@@ -300,16 +299,16 @@ export default {
       //Automatic control
       last_time: 0,
       paused_bool: false,
-      operation_list: ['Error loading operations'],//['Pick wiring harness', 'Insert connector', 'Route cables', 'Tape'],
+      operation_list: ['Error loading operations'],
       op_selected: 0,
 
       //Manual control
       ATC_robots: [], //Automatically populated from ATC_tools info
       ATC_tools: {'right':['taping_gun', 'gripper_right'],'left':['taping_gun', 'gripper_left']},
-      tools: {gripper_right:{distance:0}, gripper_right:{distance:0}, taping_gun:''}, //Default motion value
+      tools: {gripper_right:{distance:0}, gripper_right:{distance:0}, taping_gun:''}, //Default motion values
       arm_tools: {right: 'gripper_right', left: 'taping_gun'}, //Default attached tools
-      arm_selected: 'left', //Deafult selected arm
-      tool_selected: '',
+      arm_selected: 'left', //Default selected arm
+      tool_selected: '', //Automatically populated
       robot_groups: {}, //Get with a service
       group_selected: '',
       config_selected: '',
@@ -329,19 +328,19 @@ export default {
       cartesian_position_abs_left: {'X': 0, 'Y': 0, 'Z': 0, 'Rx': 0, 'Ry': 0, 'Rz': 0},
 
       //Feedback pannels
-      logs: [], //['Logs console...'],
+      logs: [],
       feedback_msgs: [{prop: "speed_right", name: 'Speed right', val: '0.0 mm/s'}, {prop: "speed_left", name: 'Speed left', val: '0.0 mm/s'}, {prop: "eef_right_status", name: 'Right EEF status', val: '-'}, {prop: "eef_left_status", name: 'Left EEF status', val: '-'}, {prop: "process_time", name: 'Process time', val: '00:00'}]
     }
   },
 
   methods: {
     init_subscribers(){
-      this.index_topic = new ROSLIB.Topic({
+      this.index_subs = new ROSLIB.Topic({
         ros : this.ros,
-        name : '/UI/process_index',
-        messageType : 'std_msgs/Int32'
+        name : this.index_topic['topic'],
+        messageType : this.index_topic['msg']
       });
-      this.index_topic.subscribe((message) => {
+      this.index_subs.subscribe((message) => {
         if(message.data >= this.operation_list.length){
           this.op_selected = 0
         }else{
@@ -366,8 +365,8 @@ export default {
 
       this.topic_mode = new ROSLIB.Topic({
         ros : this.ros,
-        name : '/UI/mode',
-        messageType : 'std_msgs/String'
+        name : this.mode_topic['topic'],
+        messageType : this.mode_topic['msg']
       });
       this.topic_mode.subscribe((message) => {
         this.modeProp = message.data;
@@ -375,8 +374,8 @@ export default {
 
       this.topic_logs = new ROSLIB.Topic({
         ros : this.ros,
-        name : '/UI/logs',
-        messageType : 'std_msgs/String'
+        name : this.logs_topic['topic'],
+        messageType : this.logs_topic['msg']
       });
       this.topic_logs.subscribe((message) => {
         this.add_logs(message.data);
@@ -384,8 +383,8 @@ export default {
 
       this.topic_feedback = new ROSLIB.Topic({
         ros : this.ros,
-        name : '/UI/feedback',
-        messageType : 'UI_nodes_pkg/configProp',
+        name : this.feedback_topic['topic'],
+        messageType : this.feedback_topic['msg'],
         //messageType : 'std_msgs/String'topic_feedback
       });
       this.topic_feedback.subscribe((message) => {
@@ -400,8 +399,8 @@ export default {
 
       this.topic_robot_status = new ROSLIB.Topic({
         ros : this.ros,
-        name : '/robot_status',
-        messageType : 'industrial_msgs/RobotStatus'
+        name : this.robot_status_topic['topic'],
+        messageType : this.robot_status_topic['msg']
       });
       this.topic_robot_status.subscribe((message) => {
         this.robot_enable_status = message.motion_possible.val==1;
@@ -409,8 +408,8 @@ export default {
 
       this.confirm_subs = new ROSLIB.Topic({
         ros : this.ros,
-        name : '/UI/confirm_req',
-        messageType : 'std_msgs/String'
+        name : this.confirm_topic['topic'],
+        messageType : this.confirm_topic['msg']
       });
       this.confirm_subs.subscribe((message) => {
         this.visualize_confirmation = true
@@ -418,11 +417,11 @@ export default {
 
       this.topic_record_time = new ROSLIB.Topic({
         ros : this.ros,
-        name : '/OAK/record_time',
-        messageType : 'std_msgs/String'
+        name : this.record_time_topic['topic'],
+        messageType : this.record_time_topic['msg']
       });
       this.topic_record_time.subscribe((message) => {
-        console.log("AAA")
+        console.log("Record callback")
         var time_data = message.data.split('-')[0];
         var cam_id_data = message.data.split('-')[1];
         this.recording_time[cam_id_data] = time_data;
@@ -437,8 +436,8 @@ export default {
 
       this.tool_subs = new ROSLIB.Topic({
         ros : this.ros,
-        name : '/UI/tool',
-        messageType : 'UI_nodes_pkg/ATC_msg'
+        name : this.tool_topic['topic'],
+        messageType : this.tool_topic['msg']
       });
       this.tool_subs.subscribe((message) => {
         this.arm_tools[message.arm_side] = message.new_tool
@@ -446,8 +445,8 @@ export default {
     },
 
     stop_subscribers(){
-      if(this.index_topic){
-        this.index_topic.unsubscribe();
+      if(this.index_subs){
+        this.index_subs.unsubscribe();
       }
       if(this.topic_mode){
         this.topic_mode.unsubscribe();
@@ -477,43 +476,43 @@ export default {
     init_services(){
         this.get_arms_pose_service = new ROSLIB.Service({
             ros : this.ros,
-            name : '/UI/get_arms_pose',
-            serviceType : 'UI_nodes_pkg/ArmsPose'
+            name : this.get_arms_pose_service_info['srv'],
+            serviceType : this.get_arms_pose_service_info['msg']
         });
         this.get_moveit_groups_service = new ROSLIB.Service({
             ros : this.ros,
-            name : '/UI/get_moveit_groups',
-            serviceType : 'UI_nodes_pkg/MoveitGroups'
+            name : this.get_moveit_groups_service_info['srv'],
+            serviceType : this.get_moveit_groups_service_info['msg']
         });
         this.move_group_service = new ROSLIB.Service({
             ros : this.ros,
-            name : '/UI/move_group',
-            serviceType : 'UI_nodes_pkg/MoveGroupSrv'
+            name : this.move_group_service_info['srv'],
+            serviceType : this.move_group_service_info['msg']
         });
         this.get_all_operations_service = new ROSLIB.Service({
             ros : this.ros,
-            name : '/process/all_operations',
-            serviceType : 'UI_nodes_pkg/StringArray'
+            name : this.get_all_operations_service_info['srv'],
+            serviceType : this.get_all_operations_service_info['msg']
         });
         this.get_mode_service = new ROSLIB.Service({
             ros : this.ros,
-            name : '/UI/get_mode',
-            serviceType : 'std_srvs/Trigger'
+            name : this.get_mode_service_info['srv'],
+            serviceType : this.get_mode_service_info['msg']
         });
         this.robot_enable_service = new ROSLIB.Service({
             ros : this.ros,
-            name : '/robot_enable',
-            serviceType : 'std_srvs/Trigger'
+            name : this.robot_enable_service_info['srv'],
+            serviceType : this.robot_enable_service_info['msg']
         });
         this.robot_disable_service = new ROSLIB.Service({
             ros : this.ros,
-            name : '/robot_disable',
-            serviceType : 'std_srvs/Trigger'
+            name : this.robot_disable_service_info['srv'],
+            serviceType : this.robot_disable_service_info['msg']
         });
         this.tape_service = new ROSLIB.Service({
             ros : this.ros,
-            name : '/gun/tape',
-            serviceType : 'std_srvs/Trigger'
+            name : this.tape_service_info['srv'],
+            serviceType : this.tape_service_info['msg']
         });
     },
 
