@@ -37,19 +37,19 @@ export default {
       parameters_msgs: 
         [{group:'Real robot', params:         
           [{name: 'Fast speed (mm/s)', prop: 'speed_fast_real_mms', val: 'NaN'},
-          {name: 'Normal speed (mm/s)', prop: 'speed_real_mms', val: 'NaN'}, 
+          {name: 'Medium speed (mm/s)', prop: 'speed_real_mms', val: 'NaN'}, 
           {name: 'Slow speed (mm/s)', prop: 'speed_slow_real_mms', val: 'NaN'}, 
           {name: 'Tension speed (mm/s)',prop: 'speed_tension_real_mms', val: 'NaN'},
           {name: 'Max speed (%)', prop: 'speed_real_per', val: 'NaN'}, 
           {name: 'Gripper control (Y/N)', prop: 'grippers_control_real', val: 'NaN'}, 
           {name: 'Gun control (Y/N)', prop: 'gun_control_real', val: 'NaN'}, 
-          {name: 'Use camera (Y/N)', prop: 'use_camera_real', val: 'NaN'}]},
+    {name: 'Use camera (Y/N)', prop: 'use_camera_real', val: 'NaN'}]},
         {group:'Simulated robot', params:         
           [{name: 'Fast speed (mm/s)', prop: 'speed_fast_demo_mms', val: 'NaN'},
-          {name: 'Normal speed (mm/s)', prop: 'speed_demo_mms', val: 'NaN'}, 
+          {name: 'Medium speed (mm/s)', prop: 'speed_demo_mms', val: 'NaN'}, 
           {name: 'Slow speed (mm/s)', prop: 'speed_slow_demo_mms', val: 'NaN'}, 
           {name: 'Tension speed (mm/s)',prop: 'speed_tension_demo_mms', val: 'NaN'},
-          {name: 'Max speed (%)', prop: 'speed_demo_per', val: 'NaN'}, 
+          {name: 'Max speed (%)', prop: 'speed_demo_per', val: 'NaN'},
           {name: 'Gripper control (Y/N)', prop: 'grippers_control_demo', val: 'NaN'}, 
           {name: 'Use camera (Y/N)', prop: 'use_camera_demo', val: 'NaN'}]},
         {group: 'Offsets', params:
@@ -69,8 +69,8 @@ export default {
         {group: 'Force sensor', params:
           [{name: 'Cable tension WH1 (N)', prop: 'cable_tension_wh1', val: 'NaN'},
           {name: 'Connector tension WH1 (N)', prop: 'connector_tension_wh1', val: 'NaN'},
-          {name: 'Cable tension WH3 (N)', prop: 'cable_tension_wh3', val: 'NaN'},
-          {name: 'Connector tension WH3 (N)', prop: 'connector_tension_wh3', val: 'NaN'},
+          {name: 'Cable tension WH2 (N)', prop: 'cable_tension_wh3', val: 'NaN'},
+          {name: 'Connector tension WH2 (N)', prop: 'connector_tension_wh3', val: 'NaN'},
           {name: 'Force control (Y/N)', prop: 'force_control_real', val: 'NaN'}]}],
       config_file_name: '../files/config.csv',
       config_changed: false,

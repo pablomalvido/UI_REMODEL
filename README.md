@@ -1,4 +1,4 @@
-# route-project-2
+# Setup instructions
 
 ## Install nodejs (we have version 14) 
 ```
