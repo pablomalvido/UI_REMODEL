@@ -3,55 +3,27 @@
     <TitlePage page='Sensors'/>
   </div>
   <div class="content">
-    <!-- <h1>Right tactile sensor</h1>
-    <div class="canvas_container">
-      <canvas id="chartForceR"></canvas>
-    </div>
-    <button @click="chart_chart()">Change data</button>
-    <div class="canvas_container">
-      <canvas id="myChartMultiple"></canvas>
-    </div> -->
 
     <div class="selection">
-
-    <input type="checkbox" id="fl" value="FL" v-model="checkedCharts" @click="check_graph('FL')">
-    <label for="fl">Force left</label>
-
-    <input type="checkbox" id="fr" value="FR" v-model="checkedCharts" @click="check_graph('FR')">
-    <label for="fr">Force right</label>
-
-    <input type="checkbox" id="tl" value="TL" v-model="checkedCharts" @click="check_graph('TL')">
-    <label for="tl">Tactile left</label>
-
-    <input type="checkbox" id="tr" value="TR" v-model="checkedCharts" @click="check_graph('TR')">
-    <label for="tr">Tactile right</label>
+    <div class ="inline_items">
+      <div v-for="(sensor, key) in sensors" :key="key" class = "checkbox_item">
+      <input type="checkbox" :id="sensor.name" :value="sensor.name" v-model="checkedCharts" @click="check_graph(sensor)">
+      <label :for="sensor.name">{{sensor.title}}</label>
+      </div>
+    </div>
     </div>
 
     <ul>
       <li>
         <div class ="inline_items">
-          <div v-if="checkedCharts.includes('FL')">
-            <div class="canvas_container">
-              <canvas id="chartForceL"></canvas>
-            </div>
-          </div>
-          <div v-if="checkedCharts.includes('FR')">
-            <div class="canvas_container">
-              <canvas id="chartForceR"></canvas>
-            </div>
-          </div>
-        </div>
-      </li>
-      <li>
-        <div class ="inline_items">
-          <div v-if="checkedCharts.includes('TL')">
-            <div class="canvas_container_square">
-              <canvas id="chartTactileL"></canvas>
-            </div>
-          </div>
-          <div v-if="checkedCharts.includes('TR')">
-            <div class="canvas_container_square">
-              <canvas id="chartTactileR"></canvas>
+          <div v-for="(sensor, key) in sensors" :key="key">
+            <div v-if="checkedCharts.includes(sensor.name)">
+              <div class="canvas_container" v-if="sensor.type=='0'">
+                <canvas :id="sensor.id"></canvas>
+              </div>
+              <div class="canvas_container_square" v-if="sensor.type=='1'">
+                <canvas :id="sensor.id"></canvas>
+              </div>
             </div>
           </div>
         </div>
@@ -75,231 +47,95 @@ export default {
   
   data(){
     return{
-      msg: 'Hellooo',
       rosCon: false,
       modeProp: '',
-      username: '',
-      password: '',
       role: this.$route.params.role,
-      checkedCharts: ['FR', 'FL', 'TL', 'TR'],
-      data_chart: {},
-      chartForceR: null,
-      chartForceL: null,
-      chartTactileR: null,
-      chartTactileL: null,
-      myChartMultiple: null,
+      sensors: { //types - 0: time chart, 1: xy chart
+        1: {name: 'FL', id: 'chartForceL', type: 0, title: "Left force sensor", limits_y:[-10,10], labels:['Fx','Fy','Fz','Tx','Ty','Tz'], topic:'left_norbdo/forces', msg:'UI_nodes_pkg/sensorT'},
+        2: {name: 'FR', id: 'chartForceR', type: 0, title: "Right force sensor", limits_y:[-10,10], labels:['Fx','Fy','Fz','Tx','Ty','Tz'], topic:'right_norbdo/forces', msg:'UI_nodes_pkg/sensorT'},
+        3: {name: 'TL', id: 'chartTactileL', type: 1, title: "Left tactile sensor", limits_xy:[0,6,0,6], topic:'sensors/tactile_left', msg:'UI_nodes_pkg/sensorXY'},
+        4: {name: 'TR', id: 'chartTactileR', type: 1, title: "Right tactile sensor", limits_xy:[0,6,0,6], topic:'sensors/tactile_right', msg:'UI_nodes_pkg/sensorXY'},
+      },
+      checkedCharts: [],
+      chartObjList: {},
+      sensor_topics: [],
     }
   },
 
   methods: {
 
     init_subscribers(){
-      this.forceR_topic = new ROSLIB.Topic({
-        ros : this.ros,
-        name : 'sensors/force_right',
-        messageType : 'UI_nodes_pkg/forces'
-      });
-      this.forceR_topic.subscribe((message) => {
-        var forces_msg = [message.Fx, message.Fy, message.Fz, message.Tz, message.Ty, message.Tz]
-        for (let i = 0; i < 6; i++) {  
-          var values = this.chartForceR.data.datasets[i].data.slice(1);
-          values.push(forces_msg[i])
-          this.chartForceR.data.datasets[i].data = values;
-        }
-        var valuesX = this.chartForceR.data.labels.slice(1);
-        valuesX.push(valuesX[valuesX.length-1]+1)
-        this.chartForceR.data.labels = valuesX
-        this.chartForceR.update();
-      });
-
-      this.forceL_topic = new ROSLIB.Topic({
-        ros : this.ros,
-        name : 'sensors/force_left',
-        messageType : 'UI_nodes_pkg/forces'
-      });
-      this.forceL_topic.subscribe((message) => {
-        var forces_msg = [message.Fx, message.Fy, message.Fz, message.Tz, message.Ty, message.Tz]
-        for (let i = 0; i < 6; i++) {  
-          var values = this.chartForceL.data.datasets[i].data.slice(1);
-          values.push(forces_msg[i])
-          this.chartForceL.data.datasets[i].data = values;
-        }
-        var valuesX = this.chartForceL.data.labels.slice(1);
-        valuesX.push(valuesX[valuesX.length-1]+1)
-        this.chartForceL.data.labels = valuesX
-        this.chartForceL.update();
-      });
-
-      this.tactileL_topic = new ROSLIB.Topic({
-        ros : this.ros,
-        name : 'sensors/tactile_left',
-        messageType : 'UI_nodes_pkg/tactile'
-      });
-      this.tactileL_topic.subscribe((message) => {
-        this.chartTactileL.data.labels = message.x
-        this.chartTactileL.data.datasets[0].data = message.y
-        this.chartTactileL.update();
-      });
-
-      this.tactileR_topic = new ROSLIB.Topic({
-        ros : this.ros,
-        name : 'sensors/tactile_right',
-        messageType : 'UI_nodes_pkg/tactile'
-      });
-      this.tactileR_topic.subscribe((message) => {
-        this.chartTactileR.data.labels = message.x
-        this.chartTactileR.data.datasets[0].data = message.y
-        this.chartTactileR.update();
-      });
-    },
-
-    check_graph(graph_name){
-      if (graph_name=="FR"){
-        if (!(this.checkedCharts.includes(graph_name))){
-          console.log("Creating")
-          setTimeout(() => {
-              this.createChartForceR()
-          }, 50)
-        }
-        else{
-          console.log("Destroying")
-          //this.chartObjForcesR.destroy()
-          this.chartForceR.destroy()
-        }
-      }
-      else if (graph_name=="FL"){
-        if (!(this.checkedCharts.includes(graph_name))){
-          console.log("Creating")
-          setTimeout(() => {
-              this.createChartForceL()
-          }, 50)
-        }
-        else{
-          console.log("Destroying")
-          this.chartForceL.destroy()
-        }
-      }
-      else if (graph_name=="TR"){
-        if (!(this.checkedCharts.includes(graph_name))){
-          console.log("Creating")
-          setTimeout(() => {
-              this.createChartTactileR()
-          }, 50)
-        }
-        else{
-          console.log("Destroying")
-          this.chartTactileR.destroy()
-        }
-      }
-      else if (graph_name=="TL"){
-        if (!(this.checkedCharts.includes(graph_name))){
-          console.log("Creating")
-          setTimeout(() => {
-              this.createChartTactileL()
-          }, 50)
-        }
-        else{
-          console.log("Destroying")
-          this.chartTactileL.destroy()
-        }
-      }
-    },
-
-    publish_string(topic, message){
-      var loadPublisher = new ROSLIB.Topic({
-        ros : this.ros,
-        name : topic,
-        messageType : 'std_msgs/String'
-      });
-
-      var loadTopic = new ROSLIB.Message({
-        data: message['msg']
-      });
-
-      loadPublisher.publish(loadTopic);
-    },
-
-    publish_string_constant(topic, message){
-      var loadPublisher = new ROSLIB.Topic({
-        ros : this.ros,
-        name : topic,
-        messageType : 'std_msgs/String'
-      });
-
-      var loadTopic = new ROSLIB.Message({
-          data: message
-      });
-
-      loadPublisher.publish(loadTopic);
-    },
-
-    createChartForceR(){
-      const ctx = document.getElementById('chartForceR');
-      var labels = [];
-      var y_values = [];
-      for (let i = 0; i < 51; i++) {  
-        labels.push(i)
-        y_values.push(0)
-      }
-      this.data_chart = {
-        labels: labels,
-        datasets: [{label: 'Fx', data: y_values, fill: false, borderColor: 'rgb(75, 192, 192)', tension: 0.1},
-          {label: 'Fy', data: y_values, fill: false, borderColor: 'rgb(192, 75, 192)', tension: 0.1},
-          {label: 'Fz', data: y_values, fill: false, borderColor: 'rgb(192, 192, 75)', tension: 0.1},
-          {label: 'Tx', data: y_values, fill: false, borderColor: 'rgb(75, 75, 192)', tension: 0.1},
-          {label: 'Ty', data: y_values, fill: false, borderColor: 'rgb(75, 192, 75)', tension: 0.1},
-          {label: 'Tz', data: y_values, fill: false, borderColor: 'rgb(192, 75, 75)', tension: 0.1},]
-      };
-
-      const chartObjForcesR = new Chart(ctx, {
-        type:'line',
-        data: this.data_chart,
-        options: {
-          plugins:{
-              //legend: {
-              //  display: false
-              //}
-              title: {
-                display: true,
-                text: 'Right force sensor',
-                color: '#000',
-                font: {
-                        size: 20,
-                    },
-              }
-         },
-          elements: {
-                    point:{
-                        radius: 0
-                    }
-                },
-          scales: {
-            y: {
-                max: 100,
-                min: -100,
-                ticks:{
-                  maxTicksLimit: 11,
-                }
-            },
-            x: {
-              display: false,
+      for (const [key, el] of Object.entries(this.sensors)) {
+        this.sensor_topics[key.toString()] = new ROSLIB.Topic({
+          ros : this.ros,
+          name : el.topic,
+          messageType : el.msg
+        });
+        if(el.type=="0"){
+          this.sensor_topics[key.toString()].subscribe((message) => {
+            for (let i = 0; i < message.data.length; i++) {  
+              var values = this.chartObjList[el.id].data.datasets[i].data.slice(1);
+              values.push(message.data[i])
+              this.chartObjList[el.id].data.datasets[i].data = values;
             }
-          },
-        },
-      });
-      
-      chartObjForcesR.options.transitions.active.animation.duration = 0;
-      chartObjForcesR.options.animation = false;
-
-      //Object.seal(chartObjForcesR);
-      //this.chartForceR = chartObjForcesR;
-      this.chartForceR = markRaw(chartObjForcesR)
-
-      this.chartForceR;
+            var valuesX = this.chartObjList[el.id].data.labels.slice(1);
+            valuesX.push(valuesX[valuesX.length-1]+1)
+            this.chartObjList[el.id].data.labels = valuesX
+            this.chartObjList[el.id].update();
+          });
+        }
+        else if(el.type=="1"){
+          this.sensor_topics[key.toString()].subscribe((message) => {
+            this.chartObjList[el.id].data.labels = message.x
+            this.chartObjList[el.id].data.datasets[0].data = message.y
+            this.chartObjList[el.id].update();
+          });
+        }
+      }
     },
 
-    createChartForceL(){
-      const ctx = document.getElementById('chartForceL');
+    stop_subscribers(){
+      for (const [key, value] of Object.entries(this.sensor_topics)) {
+        if (value){
+          value.unsubscribe();
+        }
+      }
+    },
+
+    check_graph(sensor){
+      if (!(this.checkedCharts.includes(sensor.name))){
+        console.log("Creating")
+        setTimeout(() => {
+          if(sensor.type==0){
+            this.createChartTime(sensor.id, sensor.title, sensor.limits_y[0], sensor.limits_y[1], sensor.labels)
+          }
+          else if(sensor.type==1){
+            this.createChartXY(sensor.id, sensor.title, sensor.limits_xy[0], sensor.limits_xy[1], sensor.limits_xy[2], sensor.limits_xy[3])
+          }
+        }, 50)
+      }
+      else{
+        console.log("Destroying")
+        this.chartObjList[sensor.id].destroy()
+      }
+    },
+
+    base10toBase255(number) {
+    const base = 255;
+    const result = [];
+
+    while (number > 0) {
+        const remainder = number % base;
+        result.unshift(remainder);
+        number = Math.floor(number / base);
+    }
+
+    return result;
+    },
+
+
+    createChartTime(chart_id, chart_title, min_y, max_y, chart_labels){
+      const ctx = document.getElementById(chart_id);
       var labels = [];
       var y_values = [];
       for (let i = 0; i < 51; i++) {  
@@ -308,15 +144,21 @@ export default {
       }
       var data_chrt = {
         labels: labels,
-        datasets: [{label: 'Fx', data: y_values, fill: false, borderColor: 'rgb(75, 192, 192)', tension: 0.1},
-          {label: 'Fy', data: y_values, fill: false, borderColor: 'rgb(192, 75, 192)', tension: 0.1},
-          {label: 'Fz', data: y_values, fill: false, borderColor: 'rgb(192, 192, 75)', tension: 0.1},
-          {label: 'Tx', data: y_values, fill: false, borderColor: 'rgb(75, 75, 192)', tension: 0.1},
-          {label: 'Ty', data: y_values, fill: false, borderColor: 'rgb(75, 192, 75)', tension: 0.1},
-          {label: 'Tz', data: y_values, fill: false, borderColor: 'rgb(192, 75, 75)', tension: 0.1},]
+        datasets: []
       };
 
-      const chartObjForcesL = new Chart(ctx, {
+      var color_sum = 0
+      var color_jump = parseInt((255**3)/(chart_labels.length+1))
+      var i=0
+      for (const [key, label] of Object.entries(chart_labels)) {
+        color_sum += color_jump
+        var color_i = this.base10toBase255(color_sum)
+        var color_label = 'rgb(' + color_i[0] + ','+ color_i[1] +','+ color_i[2] +')'
+        data_chrt.datasets.push({label: label, data: y_values, fill: false, borderColor: color_label, tension: 0.1})
+        i+=1
+      }
+
+      const chartTimeObj = new Chart(ctx, {
         type:'line',
         data: data_chrt,
         options: {
@@ -326,7 +168,7 @@ export default {
               //}
               title: {
                 display: true,
-                text: 'Left force sensor',
+                text: chart_title,
                 color: '#000',
                 font: {
                         size: 20,
@@ -340,8 +182,8 @@ export default {
                 },
           scales: {
             y: {
-                max: 100,
-                min: -100,
+                max: max_y,
+                min: min_y,
                 ticks:{
                   maxTicksLimit: 11,
                 }
@@ -353,16 +195,17 @@ export default {
         },
       });
       
-      chartObjForcesL.options.transitions.active.animation.duration = 0;
-      chartObjForcesL.options.animation = false;
+      chartTimeObj.options.transitions.active.animation.duration = 0;
+      chartTimeObj.options.animation = false;
 
-      this.chartForceL = markRaw(chartObjForcesL)
+      this.chartObjList[chart_id] = markRaw(chartTimeObj)
 
-      this.chartForceL;
+      this.chartObjList[chart_id];
     },
 
-    createChartTactileL(){
-      const ctx = document.getElementById('chartTactileL');
+
+    createChartXY(chart_id, chart_title, min_x, max_x, min_y, max_y){
+      const ctx = document.getElementById(chart_id);
       var labels = [];
       var y_values = [];
       for (let i = 0; i < 61; i++) {  
@@ -374,7 +217,7 @@ export default {
         datasets: [{label: 'x', data: y_values, fill: false, borderColor: 'rgb(192, 75, 75)', tension: 0.2}]
       };
 
-      const chartObjTactileL = new Chart(ctx, {
+      const chartXYObj = new Chart(ctx, {
         type:'line',
         data: data_chrt,
         options: {
@@ -384,7 +227,7 @@ export default {
               },
               title: {
                 display: true,
-                text: 'Left tactile sensor',
+                text: chart_title,
                 color: '#000',
                 font: {
                         size: 20,
@@ -398,8 +241,8 @@ export default {
                 },
           scales: {
             y: {
-                max: 6,
-                min: 0,
+                max: max_y,
+                min: min_y,
                 display: true,
                 border:{
                   display: true
@@ -414,8 +257,8 @@ export default {
                 }
             },
             x: {
-              max: 6,
-              min: 0,
+              max: max_x,
+              min: min_x,
               display: true,
               border:{
                 display: true
@@ -433,117 +276,33 @@ export default {
         },
       });
       
-      chartObjTactileL.options.transitions.active.animation.duration = 0;
-      chartObjTactileL.options.animation = false;
-      chartObjTactileL.options.maintainAspectRatio = false;
+      chartXYObj.options.transitions.active.animation.duration = 0;
+      chartXYObj.options.animation = false;
+      chartXYObj.options.maintainAspectRatio = false;
 
-      this.chartTactileL = markRaw(chartObjTactileL)
+      this.chartObjList[chart_id] = markRaw(chartXYObj)
 
-      this.chartTactileL;
-    },
-
-    createChartTactileR(){
-      const ctx = document.getElementById('chartTactileR');
-      var labels = [];
-      var y_values = [];
-      for (let i = 0; i < 61; i++) {  
-        labels.push(i)
-        y_values.push(0)
-      }
-      var data_chrt = {
-        labels: labels,
-        datasets: [{label: 'x', data: y_values, fill: false, borderColor: 'rgb(192, 75, 75)', tension: 0.2}]
-      };
-
-      const chartObjTactileR = new Chart(ctx, {
-        type:'line',
-        data: data_chrt,
-        options: {
-          plugins:{
-              legend: {
-                display: false
-              },
-              title: {
-                display: true,
-                text: 'Right tactile sensor',
-                color: '#000',
-                font: {
-                        size: 20,
-                    },
-              }
-         },
-          elements: {
-                    point:{
-                        radius: 0
-                    }
-                },
-          scales: {
-            y: {
-                max: 6,
-                min: 0,
-                display: true,
-                border:{
-                  display: true
-                },
-                grid:{
-                  display: true,
-                  drawOnChartArea: true,
-                  drawTicks: false,
-                },
-                ticks:{
-                  display: false,
-                }
-            },
-            x: {
-              max: 6,
-              min: 0,
-              display: true,
-              border:{
-                display: true
-              },
-              grid:{
-                display: true,
-                drawOnChartArea: true,
-                drawTicks: false,
-              },
-              ticks:{
-                display: false,
-              }
-            }
-          },
-        },
-      });
-      
-      chartObjTactileR.options.transitions.active.animation.duration = 0;
-      chartObjTactileR.options.animation = false;
-      chartObjTactileR.options.maintainAspectRatio = false;
-
-      this.chartTactileR = markRaw(chartObjTactileR)
-
-      this.chartTactileR;
-    },
-
-    chart_chart(){
-      var values = this.chartForceR.data.datasets[0].data.slice(1);
-      values.push(Math.floor(Math.random()*100))
-      // for (let i = 0; i < 7; i++) {  
-      //   values.push(Math.floor(Math.random()*100))
-      // }
-      this.chartForceR.data.datasets[0].data = values;
-      console.log(this.chartForceR.data.datasets[0].data);
-      var valuesX = this.chartForceR.data.labels.slice(1);
-      valuesX.push(valuesX[valuesX.length-1]+1)
-      this.chartForceR.data.labels = valuesX
-      this.chartForceR.update();
+      this.chartObjList[chart_id];
     },
 
     createCharts(){
-      this.createChartForceR()
-      this.createChartForceL()
-      this.createChartTactileR()
-      this.createChartTactileL()
+      for (const [key, el] of Object.entries(this.sensors)) {
+        if(el.type=="0"){
+          this.createChartTime(el.id, el.title, el.limits_y[0], el.limits_y[1], el.labels)
+        }
+        else if(el.type=="1"){
+          this.createChartXY(el.id, el.title, el.limits_xy[0], el.limits_xy[1], el.limits_xy[2], el.limits_xy[3])
+        }
+      }
     },
     
+  },
+
+  beforeMount(){
+    //Populate the variables
+    for (const [key, el] of Object.entries(this.sensors)) {
+      this.checkedCharts.push(el.name)
+    }
   },
 
   mounted(){
@@ -575,6 +334,7 @@ export default {
   },
 
   unmounted(){
+    this.stop_subscribers()
     this.ros.close()
   }
 }
@@ -587,8 +347,8 @@ export default {
   z-index: 200;
 }
 .canvas_container{
-  max-height: 500px;
-  width: 500px;
+  max-height: 700px;
+  width: 700px;
   margin: 30px;
 }
 .canvas_container_square{
@@ -626,6 +386,10 @@ ul {
 }
 .selection label{
   margin-right: 20px;
+}
+.checkbox_item {
+  padding: 0px;
+  margin: 0px;
 }
 li{
   margin:auto;

@@ -136,7 +136,7 @@
           </div>
           <div v-else-if="value.includes('taping_gun')">
             <label> taping gun</label>
-            <button class="small_button">Tape</button>
+            <button class="small_button" :disabled="taping" @click="actuate_gun()">Tape</button>
           </div>
           <div v-else>
             <label> none</label>
@@ -154,11 +154,11 @@
           <option v-for="(arm, index) in ATC_robots" :key="index" :value="arm">{{arm}}</option>
         </select>
         <label>Tool: </label>
-        <select v-model="tool_selected">
+        <select v-model="tool_selected" :onchange="update_selected_tool()">
           <!-- <option disabled value="">Please Select</option> -->
-          <option v-for="(tool, index) in ATC_tools" :key="index" :value="tool">{{tool}}</option>
+          <option v-for="(tool, index) in ATC_tools[arm_selected]" :key="index" :value="tool">{{tool}}</option>
         </select>
-        <button class="medium_button">Change</button>
+        <button class="medium_button" :disabled="robot_moving" @click="ATC_function()">Change</button>
       </div>
 
     </div>
@@ -210,6 +210,36 @@
       </ul>
       </div>
       </div>
+        <div class="record_control">
+          <label>Global camera recording: </label>
+          <!--button :disabled="recording||!active_record" @click="publish_bool('/OAK/start_video_recording',true)">Start</button>
+          <button :disabled="!recording||!active_record" @click="publish_bool('/OAK/stop_video_recording',true)">Stop</button-->
+          <button :disabled="recording['0']||!active_record" @click="publish_bool('/OAK/start_video_recording_multiple0',true)">Start</button>
+          <button :disabled="!recording['0']||!active_record" @click="publish_bool('/OAK/stop_video_recording_multiple0',true)">Stop</button>
+        </div>
+        <div v-if="recording['0'] && active_record">
+          <label class="recording_time">{{recording_time['0']}}</label>
+        </div>
+        <div class="record_control">
+          <label>WH1 camera recording: </label>
+          <!--button :disabled="recording||!active_record" @click="publish_bool('/OAK/start_video_recording',true)">Start</button>
+          <button :disabled="!recording||!active_record" @click="publish_bool('/OAK/stop_video_recording',true)">Stop</button-->
+          <button :disabled="recording['1']||!active_record" @click="publish_bool('/OAK/start_video_recording_multiple1',true)">Start</button>
+          <button :disabled="!recording['1']||!active_record" @click="publish_bool('/OAK/stop_video_recording_multiple1',true)">Stop</button>
+        </div>
+        <div v-if="recording['1'] && active_record">
+          <label class="recording_time">{{recording_time['1']}}</label>
+        </div>
+        <div class="record_control">
+          <label>WH2 camera recording: </label>
+          <!--button :disabled="recording||!active_record" @click="publish_bool('/OAK/start_video_recording',true)">Start</button>
+          <button :disabled="!recording||!active_record" @click="publish_bool('/OAK/stop_video_recording',true)">Stop</button-->
+          <button :disabled="recording['2']||!active_record" @click="publish_bool('/OAK/start_video_recording_multiple2',true)">Start</button>
+          <button :disabled="!recording['2']||!active_record" @click="publish_bool('/OAK/stop_video_recording_multiple2',true)">Stop</button>
+        </div>
+        <div v-if="recording['2'] && active_record">
+          <label class="recording_time">{{recording_time['2']}}</label>
+        </div>
     </div>
     </div>
   </div>
@@ -233,47 +263,59 @@ export default {
       demo_robot_con: false,
       robot_enable_status: false,
       role_user: this.$route.params.role,
-      get_arms_pose_service: null,
-      get_moveit_groups_service: null,
-      move_group_service: null,
-      get_all_operations_service: null,
-      get_mode_service: null,
-      robot_enable_service: null,
-      robot_disable_service: null,
-      visualize_confirmation: false,
-      confirm_pub: null,
-      confirm_subs: null,
-      index_topic: null,
-      topic_mode: null,
-      topic_logs: null,
-      topic_feedback: null,
-      topic_robot_status: null,
+
+      //Services
+      get_arms_pose_service_info: {'srv':'/UI/get_arms_pose','msg':'UI_nodes_pkg/ArmsPose'},
+      get_moveit_groups_service_info: {'srv':'/UI/get_moveit_groups','msg':'UI_nodes_pkg/MoveitGroups'},
+      get_all_operations_service_info: {'srv':'/process/all_operations','msg':'UI_nodes_pkg/StringArray'},
+      move_group_service_info: {'srv':'/UI/move_group','msg':'UI_nodes_pkg/MoveGroupSrv'},
+      get_mode_service_info: {'srv':'/UI/get_mode','msg':'std_srvs/Trigger'},
+      robot_enable_service_info: {'srv':'robot_enable','msg':'std_srvs/Trigger'},
+      robot_disable_service_info: {'srv':'robot_disable','msg':'std_srvs/Trigger'},
+      tape_service_info: {'srv':'/gun/tape','msg':'std_srvs/Trigger'},
+
+      //Topics
+      confirm_topic: {'topic':'/UI/confirm_req','msg':'std_msgs/String'},
+      tool_topic: {'topic':'UI/tool','msg':'UI_nodes_pkg/ATC_msg'},
+      index_topic: {'topic':'/UI/process_index','msg':'std_msgs/Int32'},
+      mode_topic: {'topic':'/UI/mode','msg':'std_msgs/String'},
+      logs_topic: {'topic':'/UI/logs','msg':'std_msgs/String'},
+      feedback_topic: {'topic':'/UI/feedback','msg':'UI_nodes_pkg/configProp'},
+      robot_status_topic: {'topic':'/robot_status','msg':'industrial_msgs/RobotStatus'},
+      record_time_topic: {'topic':'/OAK/record_time','msg':'std_msgs/String'},
+
+      //Video stream and record
       rviz_image_topics: [],
-      // rviz_image1_topic: null,
-      // rviz_image2_topic: null,
-      // rviz_image3_topic: null,
       rviz_image: "",
       rviz_image2: "../assets/img/placeholder.png",
-      camera_list: {RVIZ_Front: "/camera1/image/compressed", RVIZ_Side: "/camera2/image/compressed", RVIZ_guides: "/camera3/image/compressed", OAK_camera: "/OAK/stream_compressed"},
-      camera_selected: "/camera1/image/compressed",
+      visualize_confirmation: false,
+      camera_list: {RVIZ_Front: "/camera1/image/compressed", RVIZ_Side: "/camera2/image/compressed", RVIZ_guides: "/camera3/image/compressed", Global_camera: "/OAK/stream_compressed_1", OAK_camera_WH1: "/OAK/stream_compressed", OAK_camera_WH2: "/OAK/stream_compressed_2"},
+      camera_selected: "/camera3/image/compressed",
       show_stream: false,
+      active_record: false,
+      recording: {'0':false, '1':false, '2':false},
+      recording_time: {'0':"00:00", '1':"00:00", '2':"00:00"},
+
+      //Automatic control
       last_time: 0,
       paused_bool: false,
-      operation_list: ['Error loading operations'],//['Pick wiring harness', 'Insert connector', 'Route cables', 'Tape'],
+      operation_list: ['Error loading operations'],
       op_selected: 0,
-      ATC_robots: ['right', 'left'],
-      ATC_tools: ['taping_gun', 'gripper'],
-      tools: {gripper_right:{distance:0}, gripper_right:{distance:0}, taping_gun:''},
-      arm_tools: {right: 'gripper_right', left: 'taping_gun'},
-      arm_selected: 'left',
-      tool_selected: 'gripper',
-      robot_groups: {}, /*{arm_right:['pose1', 'pose2'], arm_left:['poseX','poseY']},*/ //Get with a service
+
+      //Manual control
+      ATC_robots: [], //Automatically populated from ATC_tools info
+      ATC_tools: {'right':['taping_gun', 'gripper_right'],'left':['taping_gun', 'gripper_left']},
+      tools: {gripper_right:{distance:0}, gripper_right:{distance:0}, taping_gun:''}, //Default motion values
+      arm_tools: {right: 'gripper_right', left: 'taping_gun'}, //Default attached tools
+      arm_selected: 'left', //Default selected arm
+      tool_selected: '', //Automatically populated
+      robot_groups: {}, //Get with a service
       group_selected: '',
-      //group_configs: [], //Get with a service
       config_selected: '',
       control_opt: 0,
       manual_opt: 0,
       robot_moving: false,
+      taping: false,
       speed_limit: "0.1",
       accel_limit: "0.1",
       speed_limit_max: 0.2,
@@ -284,19 +326,21 @@ export default {
       cartesian_position_rel_left: {'X': 0, 'Y': 0, 'Z': 0, 'Rx': 0, 'Ry': 0, 'Rz': 0},
       cartesian_position_abs_right: {'X': 0, 'Y': 0, 'Z': 0, 'Rx': 0, 'Ry': 0, 'Rz': 0},
       cartesian_position_abs_left: {'X': 0, 'Y': 0, 'Z': 0, 'Rx': 0, 'Ry': 0, 'Rz': 0},
-      logs: [], //['Logs console...'],
-      feedback_msgs: [{prop: "speed_right", name: 'Speed right', val: '0.0 mm/s'}, {prop: "speed_left", name: 'Speed left', val: '0.0 mm/s'}, {prop: "eef_right_status", name: 'Right EEF status', val: 'Gripper open'}, {prop: "eef_left_status", name: 'Left EEF status', val: 'Gripper closed'}, {prop: "process_time", name: 'Process time', val: '00:00'}]
+
+      //Feedback pannels
+      logs: [],
+      feedback_msgs: [{prop: "speed_right", name: 'Speed right', val: '0.0 mm/s'}, {prop: "speed_left", name: 'Speed left', val: '0.0 mm/s'}, {prop: "eef_right_status", name: 'Right EEF status', val: '-'}, {prop: "eef_left_status", name: 'Left EEF status', val: '-'}, {prop: "process_time", name: 'Process time', val: '00:00'}]
     }
   },
 
   methods: {
     init_subscribers(){
-      this.index_topic = new ROSLIB.Topic({
+      this.index_subs = new ROSLIB.Topic({
         ros : this.ros,
-        name : '/UI/process_index',
-        messageType : 'std_msgs/Int32'
+        name : this.index_topic['topic'],
+        messageType : this.index_topic['msg']
       });
-      this.index_topic.subscribe((message) => {
+      this.index_subs.subscribe((message) => {
         if(message.data >= this.operation_list.length){
           this.op_selected = 0
         }else{
@@ -319,51 +363,10 @@ export default {
         });
       }
 
-      /*
-      this.rviz_image1_topic = new ROSLIB.Topic({
-        ros : this.ros,
-        name : '/camera1/image/compressed',
-        messageType : 'sensor_msgs/CompressedImage'
-      });
-      this.rviz_image1_topic.subscribe((message) => {
-        //console.log('RVIZ image 1 updated');
-        if (this.rviz_image1_topic.name == this.camera_selected){
-          this.last_time = Date.now();
-          this.rviz_image = "data:image/jpg;base64," + message.data;
-        }
-      });
-
-      this.rviz_image2_topic = new ROSLIB.Topic({
-        ros : this.ros,
-        name : '/camera2/image/compressed',
-        messageType : 'sensor_msgs/CompressedImage'
-      });      
-      this.rviz_image2_topic.subscribe((message) => {
-        //console.log('RVIZ image 2 updated');
-        if (this.rviz_image2_topic.name == this.camera_selected){
-          this.last_time = Date.now();
-          this.rviz_image = "data:image/jpg;base64," + message.data;
-        }
-      });
-
-      this.rviz_image3_topic = new ROSLIB.Topic({
-        ros : this.ros,
-        name : '/camera3/image/compressed',
-        messageType : 'sensor_msgs/CompressedImage'
-      });      
-      this.rviz_image3_topic.subscribe((message) => {
-        //console.log('RVIZ image 3 updated');
-        if (this.rviz_image3_topic.name == this.camera_selected){
-          this.last_time = Date.now();
-          this.rviz_image = "data:image/jpg;base64," + message.data;
-        }
-      });
-      */
-
       this.topic_mode = new ROSLIB.Topic({
         ros : this.ros,
-        name : '/UI/mode',
-        messageType : 'std_msgs/String'
+        name : this.mode_topic['topic'],
+        messageType : this.mode_topic['msg']
       });
       this.topic_mode.subscribe((message) => {
         this.modeProp = message.data;
@@ -371,8 +374,8 @@ export default {
 
       this.topic_logs = new ROSLIB.Topic({
         ros : this.ros,
-        name : '/UI/logs',
-        messageType : 'std_msgs/String'
+        name : this.logs_topic['topic'],
+        messageType : this.logs_topic['msg']
       });
       this.topic_logs.subscribe((message) => {
         this.add_logs(message.data);
@@ -380,8 +383,8 @@ export default {
 
       this.topic_feedback = new ROSLIB.Topic({
         ros : this.ros,
-        name : '/UI/feedback',
-        messageType : 'UI_nodes_pkg/configProp',
+        name : this.feedback_topic['topic'],
+        messageType : this.feedback_topic['msg'],
         //messageType : 'std_msgs/String'topic_feedback
       });
       this.topic_feedback.subscribe((message) => {
@@ -396,25 +399,54 @@ export default {
 
       this.topic_robot_status = new ROSLIB.Topic({
         ros : this.ros,
-        name : '/robot_status',
-        messageType : 'industrial_msgs/RobotStatus'
+        name : this.robot_status_topic['topic'],
+        messageType : this.robot_status_topic['msg']
       });
       this.topic_robot_status.subscribe((message) => {
         this.robot_enable_status = message.motion_possible.val==1;
       });
+
       this.confirm_subs = new ROSLIB.Topic({
         ros : this.ros,
-        name : '/UI/confirm_req',
-        messageType : 'std_msgs/String'
+        name : this.confirm_topic['topic'],
+        messageType : this.confirm_topic['msg']
       });
       this.confirm_subs.subscribe((message) => {
         this.visualize_confirmation = true
       });
+
+      this.topic_record_time = new ROSLIB.Topic({
+        ros : this.ros,
+        name : this.record_time_topic['topic'],
+        messageType : this.record_time_topic['msg']
+      });
+      this.topic_record_time.subscribe((message) => {
+        console.log("Record callback")
+        var time_data = message.data.split('-')[0];
+        var cam_id_data = message.data.split('-')[1];
+        this.recording_time[cam_id_data] = time_data;
+        console.log(message.data)
+        if (time_data == "00:00"){
+          this.recording[cam_id_data] = false;
+        }
+        else{
+          this.recording[cam_id_data] = true;
+        }
+      });
+
+      this.tool_subs = new ROSLIB.Topic({
+        ros : this.ros,
+        name : this.tool_topic['topic'],
+        messageType : this.tool_topic['msg']
+      });
+      this.tool_subs.subscribe((message) => {
+        this.arm_tools[message.arm_side] = message.new_tool
+      });
     },
 
     stop_subscribers(){
-      if(this.index_topic){
-        this.index_topic.unsubscribe();
+      if(this.index_subs){
+        this.index_subs.unsubscribe();
       }
       if(this.topic_mode){
         this.topic_mode.unsubscribe();
@@ -433,54 +465,54 @@ export default {
       if(this.topic_robot_status){
         this.topic_robot_status.unsubscribe();
       }
-      /*
-      if (this.rviz_image1_topic){
-        this.rviz_image1_topic.unsubscribe();
+      if(this.topic_record_time){
+        this.topic_record_time.unsubscribe();
       }
-      if (this.rviz_image2_topic){
-        this.rviz_image2_topic.unsubscribe();
+      if(this.tool_subs){
+        this.tool_subs.unsubscribe();
       }
-      if (this.rviz_image3_topic){
-        this.rviz_image3_topic.unsubscribe();
-      }
-      */
     },
 
     init_services(){
         this.get_arms_pose_service = new ROSLIB.Service({
             ros : this.ros,
-            name : '/UI/get_arms_pose',
-            serviceType : 'UI_nodes_pkg/ArmsPose'
+            name : this.get_arms_pose_service_info['srv'],
+            serviceType : this.get_arms_pose_service_info['msg']
         });
         this.get_moveit_groups_service = new ROSLIB.Service({
             ros : this.ros,
-            name : '/UI/get_moveit_groups',
-            serviceType : 'UI_nodes_pkg/MoveitGroups'
+            name : this.get_moveit_groups_service_info['srv'],
+            serviceType : this.get_moveit_groups_service_info['msg']
         });
         this.move_group_service = new ROSLIB.Service({
             ros : this.ros,
-            name : '/UI/move_group',
-            serviceType : 'UI_nodes_pkg/MoveGroupSrv'
+            name : this.move_group_service_info['srv'],
+            serviceType : this.move_group_service_info['msg']
         });
         this.get_all_operations_service = new ROSLIB.Service({
             ros : this.ros,
-            name : '/process/all_operations',
-            serviceType : 'UI_nodes_pkg/StringArray'
+            name : this.get_all_operations_service_info['srv'],
+            serviceType : this.get_all_operations_service_info['msg']
         });
         this.get_mode_service = new ROSLIB.Service({
             ros : this.ros,
-            name : '/UI/get_mode',
-            serviceType : 'std_srvs/Trigger'
+            name : this.get_mode_service_info['srv'],
+            serviceType : this.get_mode_service_info['msg']
         });
         this.robot_enable_service = new ROSLIB.Service({
             ros : this.ros,
-            name : '/robot_enable',
-            serviceType : 'std_srvs/Trigger'
+            name : this.robot_enable_service_info['srv'],
+            serviceType : this.robot_enable_service_info['msg']
         });
         this.robot_disable_service = new ROSLIB.Service({
             ros : this.ros,
-            name : '/robot_disable',
-            serviceType : 'std_srvs/Trigger'
+            name : this.robot_disable_service_info['srv'],
+            serviceType : this.robot_disable_service_info['msg']
+        });
+        this.tape_service = new ROSLIB.Service({
+            ros : this.ros,
+            name : this.tape_service_info['srv'],
+            serviceType : this.tape_service_info['msg']
         });
     },
 
@@ -798,6 +830,37 @@ export default {
       gripperPublisher.publish(gripperMsg);
     },
 
+    actuate_gun(){
+      this.taping = true
+      var request = new ROSLIB.ServiceRequest({});  
+      this.tape_service.callService(request, (result) => {
+        this.taping = false
+      });
+    },
+
+    update_selected_tool(){
+      console.log(this.tool_selected)
+      if (!(this.ATC_tools[this.arm_selected].includes(this.tool_selected)) || this.tool_selected === undefined || this.tool_selected === null){
+        this.tool_selected = JSON.parse(JSON.stringify(this.ATC_tools[this.arm_selected]))[0]
+      }
+    },
+
+    ATC_function(){
+      var ATCPublisher = new ROSLIB.Topic({
+        ros : this.ros,
+        name : '/UI/ATC',
+        messageType : 'UI_nodes_pkg/ATC_msg'
+      });
+
+      var ATCTopic = new ROSLIB.Message({
+        new_tool: this.tool_selected,
+        arm_side: this.arm_selected,
+      });
+
+      ATCPublisher.publish(ATCTopic);
+      console.log(this.rosCon)
+    },
+
     confim_response(msg){
       this.publish_string('UI/confirm_res',msg)
       this.visualize_confirmation = false
@@ -809,12 +872,34 @@ export default {
       this.logs.unshift(time_now + ": " + msg);
     },
 
+    monitoring_method(){
+      this.ros.getNodes((nodes) => {
+        if (nodes.includes("/multiple_OAK")){
+          this.active_record = true;
+        }
+        else{
+          this.active_record = false;
+        }
+      });
+      setTimeout(() => { //Check periodically
+        this.monitoring_method() 
+      }, 1000);
+    },
+
     test_method(){
       console.log("Hello test")
       this.ros.getServices((services) => {
         console.log(services);
       });
-    },
+    }
+  },
+
+  beforeMount(){
+    //Populate the variables
+    for (const [key, el] of Object.entries(this.ATC_tools)) {
+      this.ATC_robots.push(key)
+    }
+    this.tool_selected = this.arm_tools[this.arm_selected]
   },
 
   mounted(){
@@ -846,7 +931,7 @@ export default {
     })
 
     this.checkStreamState()
-    this.test_method()
+    this.monitoring_method()
   },
 
   unmounted(){
@@ -1136,5 +1221,26 @@ option{
   margin-right: 20px;
   margin-bottom: 10px;
   padding-right: 4px;
+}
+.record_control{
+  margin-right: 15px;
+  margin-left: 15px;
+  margin-bottom: 15px;
+  margin-top: 20px;
+  font-size: 14px;
+}
+.record_control button{
+  width: 60px;
+  height: 25px;
+  margin: 3px;
+}
+.recording_time{
+  background-color: #716f8c;
+  color: #1d1b31;
+  padding: 3px;
+  padding-left: 5px;
+  border-radius: 5px;
+  width: 150px;
+  text-align: left;
 }
 </style>

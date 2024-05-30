@@ -46,13 +46,12 @@ export default {
             resetTopic:null,
             update_safety_topic: null,
             RSM_node_name: '/RSM_PLC_connection',
-            safety_status: 2,//0, //0: Alarm, 1: Safety OK, 2: Not connected to RSM
+            safety_status: 2, //0: Alarm, 1: Safety OK, 2: Not connected to RSM
             active_alarms: [],//['Emergency stop button', 'Door of the cell open'],
             inactive_alarms: [],//['Light curtain detection'],
             active_alarms_temp : [],
             inactive_alarms_temp : [],
             test: "",
-            problems: {"robot": {"detected": false, "active": false}, "Estop": {"detected": false, "active": false}, "curtain": {"detected": false, "active": false}, "door": {"detected": false, "active": false}, "UI": {"detected": false, "active": false}, "vision": {"detected": false, "active": false}},
         }
     },
 
